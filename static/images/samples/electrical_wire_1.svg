@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="nightBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#nightBg)"/>
+  <!-- Utility pole -->
+  <rect x="100" y="40" width="24" height="360" fill="#475569"/>
+  <rect x="60" y="80" width="104" height="12" fill="#64748b"/>
+  <!-- Snapped cable with spark -->
+  <path d="M 112 86 Q 220 180 320 280 Q 330 295 345 285" fill="none" stroke="#38bdf8" stroke-width="4"/>
+  <!-- Spark effect -->
+  <circle cx="345" cy="285" r="14" fill="#fef08a" opacity="0.9"/>
+  <line x1="335" y1="275" x2="315" y2="260" stroke="#f59e0b" stroke-width="2"/>
+  <line x1="355" y1="275" x2="375" y2="255" stroke="#facc15" stroke-width="2"/>
+  <line x1="345" y1="295" x2="350" y2="315" stroke="#f59e0b" stroke-width="2"/>
+  <!-- Warning badge -->
+  <rect x="20" y="20" width="190" height="34" rx="6" fill="rgba(15,23,42,0.85)" stroke="#ef4444" stroke-width="1.5"/>
+  <text x="32" y="42" fill="#ef4444" font-family="monospace" font-size="13" font-weight="bold">⚡ 440V LIVE CABLE</text>
+  <text x="300" y="375" fill="#f87171" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle">Danglng High Tension Cable — Hebbal Flyover Corridor</text>
+</svg>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CivicAI – Smart Citizen Complaint Management System{% endblock %}</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2306b6d4'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  
+  <!-- Optional Leaflet CSS for Map Features -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+
+  <!-- Top Sticky Navigation Bar -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="brand-logo">
+        <div class="brand-icon-wrap">
+          <i class="fas fa-city"></i>
+        </div>
+        <span>Civic<span class="text-teal">AI</span></span>
+        <span class="pulse-dot" title="City Neural Grid: Active"></span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="/portal" class="nav-link {% if request.path in ['/portal', '/all-in-one'] %}active{% endif %}" style="color: var(--teal-400); font-weight: 700;"><i class="fas fa-layer-group"></i> All-In-One Hub</a></li>
+          <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><i class="fas fa-home"></i> Home</a></li>
+          <li><a href="/submit" class="nav-link {% if request.path in ['/submit', '/report'] %}active{% endif %}"><i class="fas fa-plus-circle"></i> Report Issue</a></li>
+          <li><a href="/track" class="nav-link {% if request.path == '/track' %}active{% endif %}"><i class="fas fa-search-location"></i> Track Status</a></li>
+          <li><a href="/admin" class="nav-link {% if request.path in ['/admin', '/dashboard'] %}active{% endif %}"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+          <li><a href="/manage" class="nav-link {% if request.path in ['/manage', '/complaints'] %}active{% endif %}"><i class="fas fa-tasks"></i> Management</a></li>
+          <li><a href="/map" class="nav-link {% if request.path == '/map' %}active{% endif %}"><i class="fas fa-map-marked-alt"></i> City Pulse</a></li>
+          <li><a href="/risk-predictor" class="nav-link {% if request.path == '/risk-predictor' %}active{% endif %}"><i class="fas fa-brain"></i> Risk AI</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="/portal" class="btn btn-outline-teal btn-sm" style="margin-right: 0.35rem;">
+          <i class="fas fa-layer-group"></i> All-In-One
+        </a>
+        <a href="/submit" class="btn btn-primary btn-sm">
+          <i class="fas fa-camera"></i> File Complaint
+        </a>
+        <button class="mobile-menu-btn" aria-label="Toggle Navigation">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content View -->
+  <main style="flex: 1;">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Floating Aura AI Assistant Widget -->
+  <div class="aura-widget">
+    <div class="aura-chat-box" id="auraChatBox">
+      <div class="aura-header">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <div class="brand-icon-wrap" style="width: 32px; height: 32px; font-size: 0.9rem;">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.92rem; color: #ffffff;">Aura AI Copilot</div>
+            <div style="font-size: 0.72rem; color: var(--teal-400);">● Municipal Smart Assistant</div>
+          </div>
+        </div>
+        <button class="btn-close" id="auraCloseBtn" aria-label="Close Assistant">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="aura-messages" id="auraMessages">
+        <div class="aura-msg bot">
+          Hello! I am <strong>Aura</strong>, your CivicAI assistant. Ask me anything, or paste a tracking ID (e.g. <code>CV-2026-1001</code>) to check live progress.
+        </div>
+      </div>
+
+      <div class="aura-input-wrap">
+        <input type="text" class="aura-input" id="auraInput" placeholder="Ask Aura or enter Complaint ID..." autocomplete="off">
+        <button class="btn btn-primary btn-sm" id="auraSendBtn" style="padding: 0.45rem 0.8rem;">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+
+    <button class="aura-toggle-btn" id="auraToggleBtn" title="Chat with Aura Smart Assistant">
+      <i class="fas fa-comment-dots"></i>
+    </button>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container"></div>
+
+  <!-- Global Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-logo" style="margin-bottom: 1rem;">
+            <div class="brand-icon-wrap">
+              <i class="fas fa-city"></i>
+            </div>
+            <span>Civic<span class="text-teal">AI</span></span>
+          </div>
+          <p class="text-muted" style="font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.25rem;">
+            Empowering citizens and municipal engineers through transparent, AI-prioritized civic triage and explainable dispute management.
+          </p>
+          <div style="display: flex; gap: 0.75rem;">
+            <span class="badge" style="background: rgba(6, 182, 212, 0.12); color: var(--cyan-300); border: 1px solid rgba(6, 182, 212, 0.3);">
+              <i class="fas fa-check-circle text-teal"></i> System Online
+            </span>
+            <span class="badge" style="background: rgba(16, 185, 129, 0.12); color: var(--low); border: 1px solid rgba(16, 185, 129, 0.3);">
+              <i class="fas fa-bolt"></i> Real-time AI
+            </span>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h5>Citizens</h5>
+          <ul class="footer-links">
+            <li><a href="/submit"><i class="fas fa-angle-right"></i> File New Report</a></li>
+            <li><a href="/track"><i class="fas fa-angle-right"></i> Live Status Tracker</a></li>
+            <li><a href="/map"><i class="fas fa-angle-right"></i> City Pulse Map</a></li>
+            <li><a href="/leaderboard"><i class="fas fa-angle-right"></i> Community Champions</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Administration</h5>
+          <ul class="footer-links">
+            <li><a href="/admin"><i class="fas fa-angle-right"></i> Executive Dashboard</a></li>
+            <li><a href="/manage"><i class="fas fa-angle-right"></i> Complaints Console</a></li>
+            <li><a href="/risk-predictor"><i class="fas fa-angle-right"></i> Ward Risk Forecast</a></li>
+            <li><a href="/before-after"><i class="fas fa-angle-right"></i> Resolution Audits</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Emergency Helplines</h5>
+          <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 0.85rem;">
+            For immediate life-threatening road, electrical or drainage collapse:
+          </p>
+          <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--radius-sm); padding: 0.75rem 1rem;">
+            <div style="font-weight: 700; color: #fca5a5; font-size: 0.95rem;">
+              <i class="fas fa-phone-alt"></i> Disaster Rapid Desk: 112
+            </div>
+            <div style="font-size: 0.8rem; color: #f87171; margin-top: 3px;">
+              Direct route to BBMP / Municipal Squad
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 CivicAI Smart Citizen Management. All rights reserved. Transparent AI Governance.</div>
+        <div style="display: flex; gap: 1.5rem;">
+          <a href="/track" class="text-dim">Tracking API</a>
+          <a href="/admin" class="text-dim">Admin Gateway</a>
+          <a href="#" class="text-dim">Privacy Policy</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core Scripts -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  
+  <!-- Leaflet JS for Maps -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <!-- Chart.js for Dashboards -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
+

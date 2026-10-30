@@ -1,0 +1,722 @@
+{% extends "base.html" %}
+
+{% block title %}City Pulse Map & Hotspot Radar – CivicAI{% endblock %}
+
+{% block head_extra %}
+<style>
+  #mapContainer {
+    height: 680px;
+    width: 100%;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    box-shadow: var(--shadow-card);
+    z-index: 10;
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border: 1px solid var(--border-focus);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7) !important;
+    padding: 4px;
+  }
+
+  .leaflet-popup-tip {
+    background: #0f172a !important;
+  }
+
+  .custom-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+  }
+
+  .custom-pin:hover {
+    transform: scale(1.2);
+    z-index: 9999 !important;
+  }
+
+  .pin-high {
+    background: #ef4444;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.4);
+    animation: pinPulse 2s infinite;
+  }
+
+  .pin-medium {
+    background: #f59e0b;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+  }
+
+  .pin-low {
+    background: #10b981;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  }
+
+  .pin-resolved {
+    background: #06b6d4;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+  }
+
+  @keyframes pinPulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+
+    70% {
+      box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+  }
+
+  .map-filter-bar {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.2fr 1.2fr auto;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 992px) {
+    .map-filter-bar {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .map-filter-bar {
+      grid-template-columns: 1fr;
+    }
+
+    #mapContainer {
+      height: 480px;
+    }
+  }
+
+  .hotspot-card-item {
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .hotspot-card-item:hover {
+    border-color: var(--cyan-400);
+    transform: translateX(4px);
+    background: rgba(15, 23, 42, 1);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container container-wide" style="padding: 2.5rem 1.5rem 5rem;">
+
+  <!-- Header -->
+  <div
+    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.75rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+        <span class="ai-badge"><i class="fas fa-satellite-dish"></i> Geospatial Intelligence</span>
+        <span class="pulse-dot"></span>
+        <span style="font-size: 0.8rem; color: var(--teal-400); font-weight: 600;">Leaflet & OpenStreetMap Live
+          Grid</span>
+      </div>
+      <h2>Interactive Municipal Incident Map</h2>
+      <p class="text-muted" style="margin-top: 0.25rem;">
+        Real-time GPS pin mapping of infrastructure failures, priority colour-coding, and automatic multi-complaint
+        hotspot clustering.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <a href="/submit" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus-circle"></i> Report Issue
+      </a>
+      <a href="/admin" class="btn btn-secondary btn-sm">
+        <i class="fas fa-chart-line"></i> Admin Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Interactive Filter Controls Bar -->
+  <div class="map-filter-bar">
+    <!-- Keyword / ID Search -->
+    <div>
+      <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.35rem;">
+        <i class="fas fa-search text-teal"></i> Search Location or Keyword
+      </label>
+      <input type="text" id="mapSearchInput" class="form-control"
+        placeholder="Search by ID, road, title, or landmark..." style="height: 40px; font-size: 0.88rem;">
+    </div>
+
+    <!-- Category Filter -->
+    <div>
+      <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.35rem;">
+        <i class="fas fa-tag text-teal"></i> Category
+      </label>
+      <select id="mapCategoryFilter" class="form-select" style="height: 40px; font-size: 0.88rem;">
+        <option value="All">All Categories</option>
+        <option value="Road Damage">Road Damage</option>
+        <option value="Waterlogging">Waterlogging</option>
+        <option value="Garbage">Garbage</option>
+        <option value="Streetlight">Streetlight</option>
+        <option value="Drainage">Drainage</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <!-- Priority Filter -->
+    <div>
+      <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.35rem;">
+        <i class="fas fa-shield-alt text-teal"></i> Priority
+      </label>
+      <select id="mapPriorityFilter" class="form-select" style="height: 40px; font-size: 0.88rem;">
+        <option value="All">All Priorities</option>
+        <option value="High">High Priority</option>
+        <option value="Medium">Medium Priority</option>
+        <option value="Low">Low Priority</option>
+      </select>
+    </div>
+
+    <!-- Status Filter -->
+    <div>
+      <label class="form-label" style="font-size: 0.8rem; margin-bottom: 0.35rem;">
+        <i class="fas fa-tasks text-teal"></i> Status
+      </label>
+      <select id="mapStatusFilter" class="form-select" style="height: 40px; font-size: 0.88rem;">
+        <option value="All">All Statuses</option>
+        <option value="Active">Active / In Progress</option>
+        <option value="Resolved">Resolved Only</option>
+      </select>
+    </div>
+
+    <!-- Reset & Base Tile Toggle -->
+    <div style="display: flex; gap: 0.5rem;">
+      <button id="btnResetMapFilters" class="btn btn-secondary btn-sm" title="Reset All Filters"
+        style="height: 40px; padding: 0 0.85rem;">
+        <i class="fas fa-undo"></i>
+      </button>
+      <button id="btnToggleTileLayer" class="btn btn-outline-teal btn-sm"
+        title="Toggle OpenStreetMap Standard / Dark View" style="height: 40px; white-space: nowrap;">
+        <i class="fas fa-layer-group"></i> Dark / OSM
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Map & Hotspot Analytics Layout -->
+  <div class="map-layout-grid" style="display: grid; grid-template-columns: 3fr 1fr; gap: 1.5rem; align-items: start;">
+
+    <!-- Left: Leaflet Interactive Map -->
+    <div class="card" style="padding: 0.75rem; position: relative;">
+      <!-- Quick Status Badges Overlay -->
+      <div
+        style="position: absolute; top: 1.5rem; left: 1.5rem; z-index: 400; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px); padding: 0.5rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; align-items: center; gap: 0.85rem; font-size: 0.8rem;">
+        <span style="color: #ffffff; font-weight: 700;" id="statVisiblePins">0 Pins</span>
+        <span style="color: var(--text-dim);">•</span>
+        <span style="color: #f87171; font-weight: 700;" id="statHighPins">0 High</span>
+        <span style="color: var(--text-dim);">•</span>
+        <span style="color: #fbbf24; font-weight: 700;" id="statHotspotZones">0 Hotspots</span>
+      </div>
+
+      <div id="mapContainer"></div>
+    </div>
+
+    <!-- Right Sidebar: Hotspots Radar & Color Legend -->
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+
+      <!-- Priority Legend Card -->
+      <div class="card" style="padding: 1.25rem;">
+        <div class="card-header" style="margin-bottom: 0.85rem; padding-bottom: 0.65rem;">
+          <div class="card-title" style="font-size: 0.95rem;">
+            <i class="fas fa-palette text-teal"></i> Map Priority Legend
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.65rem; font-size: 0.82rem;">
+          <!-- High Priority -->
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div
+              style="width: 22px; height: 22px; border-radius: 50%; background: #ef4444; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(239,68,68,0.7); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; flex-shrink: 0;">
+              <i class="fas fa-exclamation"></i>
+            </div>
+            <div>
+              <strong style="color: #f87171;">High Priority (Red)</strong>
+              <div style="color: var(--text-dim); font-size: 0.74rem;">Urgent public hazard / 24h SLA</div>
+            </div>
+          </div>
+
+          <!-- Medium Priority -->
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div
+              style="width: 22px; height: 22px; border-radius: 50%; background: #f59e0b; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(245,158,11,0.6); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; flex-shrink: 0;">
+              <i class="fas fa-exclamation"></i>
+            </div>
+            <div>
+              <strong style="color: #fbbf24;">Medium Priority (Amber)</strong>
+              <div style="color: var(--text-dim); font-size: 0.74rem;">Scheduled work order / 72h SLA</div>
+            </div>
+          </div>
+
+          <!-- Low Priority -->
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div
+              style="width: 22px; height: 22px; border-radius: 50%; background: #10b981; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(16,185,129,0.5); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; flex-shrink: 0;">
+              <i class="fas fa-info"></i>
+            </div>
+            <div>
+              <strong style="color: #34d399;">Low Priority (Green)</strong>
+              <div style="color: var(--text-dim); font-size: 0.74rem;">Routine maintenance / 7-day SLA</div>
+            </div>
+          </div>
+
+          <!-- Resolved -->
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <div
+              style="width: 22px; height: 22px; border-radius: 50%; background: #06b6d4; border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(6,182,212,0.5); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 9px; flex-shrink: 0;">
+              <i class="fas fa-check"></i>
+            </div>
+            <div>
+              <strong style="color: var(--cyan-300);">Resolved (Teal)</strong>
+              <div style="color: var(--text-dim); font-size: 0.74rem;">Citizen verified remediated</div>
+            </div>
+          </div>
+
+          <!-- Hotspot Circle Overlay -->
+          <div
+            style="display: flex; align-items: center; gap: 0.65rem; border-top: 1px solid var(--border-subtle); padding-top: 0.5rem; margin-top: 0.25rem;">
+            <div
+              style="width: 22px; height: 22px; border-radius: 50%; background: rgba(239,68,68,0.25); border: 2px dashed #ef4444; flex-shrink: 0;">
+            </div>
+            <div>
+              <strong style="color: #f87171;">Hotspot Area (Red Ring)</strong>
+              <div style="color: var(--text-dim); font-size: 0.74rem;">&ge; 2 complaints in 400m radius</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Identified Hotspots Sidebar -->
+      <div class="card" style="border-color: rgba(239, 68, 68, 0.35); padding: 1.25rem;">
+        <div class="card-header" style="margin-bottom: 0.85rem; padding-bottom: 0.65rem;">
+          <div class="card-title" style="font-size: 0.95rem; color: #f87171;">
+            <i class="fas fa-fire"></i> Detected Hotspots
+          </div>
+          <span id="hotspotBadge" class="badge" style="background: rgba(239,68,68,0.2); color: #f87171;">0 Active</span>
+        </div>
+
+        <p class="text-muted" style="font-size: 0.78rem; line-height: 1.4; margin-bottom: 0.85rem;">
+          Geographic clusters detected by spatial proximity. Click any hotspot to center and zoom the map:
+        </p>
+
+        <div id="hotspotsList"
+          style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 380px; overflow-y: auto;">
+          <div class="text-muted" style="font-size: 0.82rem; text-align: center; padding: 1.5rem 0;">Scanning geographic
+            clusters...</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let map = null;
+  let currentTileLayer = null;
+  let isDarkMode = true;
+  let markersLayer = null;
+  let hotspotsLayer = null;
+  let allComplaints = [];
+  let allHotspots = [];
+
+  // OpenStreetMap Tile Providers
+  const osmStandardUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const osmStandardAttr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+  const osmDarkUrl = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+  const osmDarkAttr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>';
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    // 1. Initialize Leaflet Map centered on Bangalore Smart City Coordinates
+    map = L.map("mapContainer", {
+      center: [12.9716, 77.5946],
+      zoom: 12,
+      zoomControl: true
+    });
+
+    // Default to OpenStreetMap Dark Matter tile layer
+    currentTileLayer = L.tileLayer(osmDarkUrl, {
+      attribution: osmDarkAttr,
+      maxZoom: 19
+    }).addTo(map);
+
+    markersLayer = L.layerGroup().addTo(map);
+    hotspotsLayer = L.layerGroup().addTo(map);
+
+    // 2. Load Complaint Data & Hotspots
+    await loadMapData();
+    await loadHotspots();
+
+    // 3. Attach Filter Listeners
+    const searchInput = document.getElementById("mapSearchInput");
+    const catFilter = document.getElementById("mapCategoryFilter");
+    const prioFilter = document.getElementById("mapPriorityFilter");
+    const statusFilter = document.getElementById("mapStatusFilter");
+    const btnReset = document.getElementById("btnResetMapFilters");
+    const btnToggleTile = document.getElementById("btnToggleTileLayer");
+
+    if (searchInput) searchInput.addEventListener("input", debounce(renderMarkers, 200));
+    if (catFilter) catFilter.addEventListener("change", renderMarkers);
+    if (prioFilter) prioFilter.addEventListener("change", renderMarkers);
+    if (statusFilter) statusFilter.addEventListener("change", renderMarkers);
+
+    if (btnReset) {
+      btnReset.addEventListener("click", () => {
+        if (searchInput) searchInput.value = "";
+        if (catFilter) catFilter.value = "All";
+        if (prioFilter) prioFilter.value = "All";
+        if (statusFilter) statusFilter.value = "All";
+        renderMarkers();
+        fitAllMarkers();
+      });
+    }
+
+    if (btnToggleTile) {
+      btnToggleTile.addEventListener("click", () => {
+        isDarkMode = !isDarkMode;
+        map.removeLayer(currentTileLayer);
+        if (isDarkMode) {
+          currentTileLayer = L.tileLayer(osmDarkUrl, { attribution: osmDarkAttr, maxZoom: 19 }).addTo(map);
+          btnToggleTile.innerHTML = '<i class="fas fa-layer-group"></i> Dark / OSM';
+        } else {
+          currentTileLayer = L.tileLayer(osmStandardUrl, { attribution: osmStandardAttr, maxZoom: 19 }).addTo(map);
+          btnToggleTile.innerHTML = '<i class="fas fa-sun"></i> OSM Standard';
+        }
+      });
+    }
+
+    // 4. Check for URL Parameters to auto-focus (e.g. from Admin Dashboard)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("lat") && urlParams.has("lng")) {
+      const lat = parseFloat(urlParams.get("lat"));
+      const lng = parseFloat(urlParams.get("lng"));
+      const zoom = parseInt(urlParams.get("zoom") || "16");
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setTimeout(() => {
+          map.setView([lat, lng], zoom, { animate: true });
+        }, 500);
+      }
+    }
+  });
+
+  function debounce(fn, delay) {
+    let timer;
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  async function loadMapData() {
+    try {
+      const res = await fetch("/api/complaints?include_duplicates=true");
+      const data = await res.json();
+      if (data.success) {
+        allComplaints = data.complaints;
+        renderMarkers();
+        fitAllMarkers();
+      }
+    } catch (err) {
+      console.error("Error loading complaints for map:", err);
+    }
+  }
+
+  function fitAllMarkers() {
+    if (!map || allComplaints.length === 0) return;
+    const validCoords = allComplaints
+      .filter(c => c.latitude && c.longitude)
+      .map(c => [c.latitude, c.longitude]);
+
+    if (validCoords.length > 0) {
+      const bounds = L.latLngBounds(validCoords);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+    }
+  }
+
+  function getMarkerColor(complaint) {
+    if (complaint.status === "Resolved") {
+      return { bg: "#06b6d4", class: "pin-resolved", icon: "fa-check" };
+    }
+    const prio = (complaint.priority || "MEDIUM").toUpperCase();
+    if (prio === "HIGH" || prio === "CRITICAL") {
+      return { bg: "#ef4444", class: "pin-high", icon: "fa-exclamation-triangle" };
+    } else if (prio === "MEDIUM") {
+      return { bg: "#f59e0b", class: "pin-medium", icon: "fa-exclamation" };
+    } else {
+      return { bg: "#10b981", class: "pin-low", icon: "fa-info" };
+    }
+  }
+
+  function matchCategory(filterCat, complaintCat) {
+    if (filterCat === "All") return true;
+    if (filterCat === complaintCat) return true;
+
+    // Backward-compatible category normalization
+    const mapping = {
+      "Road Damage": ["Road Damage", "Roads & Potholes"],
+      "Waterlogging": ["Waterlogging", "Waterlogging & Drainage"],
+      "Garbage": ["Garbage", "Garbage & Sanitation"],
+      "Streetlight": ["Streetlight", "Streetlights & Electricity"],
+      "Drainage": ["Drainage", "Open Manhole & Safety"],
+      "Other": ["Other", "Fallen Trees & Obstructions"]
+    };
+
+    const aliases = mapping[filterCat] || [filterCat];
+    return aliases.includes(complaintCat);
+  }
+
+  function renderMarkers() {
+    markersLayer.clearLayers();
+
+    const search = (document.getElementById("mapSearchInput")?.value || "").toLowerCase().trim();
+    const category = document.getElementById("mapCategoryFilter")?.value || "All";
+    const priority = document.getElementById("mapPriorityFilter")?.value || "All";
+    const status = document.getElementById("mapStatusFilter")?.value || "All";
+
+    let visibleCount = 0;
+    let highCount = 0;
+
+    allComplaints.forEach(c => {
+      // 1. Category Filter
+      if (!matchCategory(category, c.category)) return;
+
+      // 2. Priority Filter
+      const prio = (c.priority || "MEDIUM").toUpperCase();
+      if (priority !== "All") {
+        const targetPrio = priority.toUpperCase();
+        if (targetPrio === "HIGH" && prio !== "HIGH" && prio !== "CRITICAL") return;
+        if (targetPrio === "MEDIUM" && prio !== "MEDIUM") return;
+        if (targetPrio === "LOW" && prio !== "LOW") return;
+      }
+
+      // 3. Status Filter
+      if (status === "Active" && c.status === "Resolved") return;
+      if (status === "Resolved" && c.status !== "Resolved") return;
+
+      // 4. Keyword Search
+      if (search) {
+        const text = `${c.complaint_id} ${c.title} ${c.description} ${c.location_name} ${c.category}`.toLowerCase();
+        if (!text.includes(search)) return;
+      }
+
+      visibleCount++;
+      if (prio === "HIGH" || prio === "CRITICAL") highCount++;
+
+      // Create Custom Pin Icon
+      const markerStyle = getMarkerColor(c);
+      const customIcon = L.divIcon({
+        className: "custom-pin",
+        html: `
+          <div class="${markerStyle.class}" style="width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 11px; cursor: pointer;">
+            <i class="fas ${markerStyle.icon}"></i>
+          </div>
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+        popupAnchor: [0, -14]
+      });
+
+      const marker = L.marker([c.latitude, c.longitude], { icon: customIcon });
+
+      // Build Rich Complaint Details Popup
+      const thumbnailHtml = c.image_url ? `
+        <div style="margin-bottom: 8px;">
+          <img src="${c.image_url}" alt="Complaint Photo" style="width: 100%; height: 110px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+        </div>
+      ` : '';
+
+      const reasonsHtml = c.priority_reasons && c.priority_reasons.length > 0 ? `
+        <div style="margin-top: 6px; background: rgba(239,68,68,0.1); border-left: 2px solid #ef4444; padding: 4px 8px; border-radius: 4px;">
+          <div style="font-size: 0.72rem; color: #fca5a5; font-weight: 700;">Priority Justification:</div>
+          <ul style="margin: 0; padding-left: 14px; font-size: 0.72rem; color: #cbd5e1; line-height: 1.35;">
+            ${c.priority_reasons.slice(0, 2).map(r => `<li>${r}</li>`).join("")}
+          </ul>
+        </div>
+      ` : '';
+
+      const popupContent = `
+        <div style="font-family: 'Plus Jakarta Sans', sans-serif; min-width: 260px; max-width: 310px; padding: 6px;">
+          ${thumbnailHtml}
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-family: monospace; font-weight: 800; color: var(--cyan-400); font-size: 0.85rem;">
+              ${c.complaint_id}
+            </span>
+            ${renderPriorityBadge(c.priority, c.priority_score)}
+          </div>
+
+          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; color: #ffffff; line-height: 1.3;">
+            ${c.title}
+          </div>
+
+          <div style="font-size: 0.75rem; color: var(--cyan-300); margin-bottom: 6px; font-weight: 600;">
+            <i class="fas fa-tag"></i> ${c.category}
+          </div>
+
+          <div style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px; line-height: 1.3;">
+            <i class="fas fa-map-marker-alt text-teal"></i> ${c.location_name}
+            <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 2px;">GPS: ${c.latitude.toFixed(4)}, ${c.longitude.toFixed(4)}</div>
+          </div>
+
+          <!-- AI Summary -->
+          <div style="background: rgba(6, 182, 212, 0.08); border-left: 2px solid var(--cyan-400); padding: 5px 8px; border-radius: 4px; font-size: 0.75rem; color: #e2e8f0; line-height: 1.35; margin-bottom: 8px;">
+            <strong style="color: var(--cyan-300);"><i class="fas fa-robot"></i> AI Summary:</strong> ${c.summary || c.description}
+          </div>
+
+          ${reasonsHtml}
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+            ${renderStatusBadge(c.status)}
+            <div style="display: flex; gap: 4px;">
+              <a href="/track?id=${c.complaint_id}" class="btn btn-outline-teal btn-sm" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" title="View timeline">Track</a>
+              <a href="/manage?search=${c.complaint_id}" class="btn btn-primary btn-sm" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;" title="Admin manage">Manage</a>
+            </div>
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(popupContent);
+      markersLayer.addLayer(marker);
+    });
+
+    // Update Quick Stat Indicators
+    const statVisible = document.getElementById("statVisiblePins");
+    const statHigh = document.getElementById("statHighPins");
+    if (statVisible) statVisible.textContent = `${visibleCount} Pins`;
+    if (statHigh) statHigh.textContent = `${highCount} High`;
+  }
+
+  async function loadHotspots() {
+    try {
+      const res = await fetch("/api/ai/hotspots");
+      const data = await res.json();
+      if (!data.success) return;
+
+      allHotspots = data.hotspots || [];
+      const listContainer = document.getElementById("hotspotsList");
+      const badge = document.getElementById("hotspotBadge");
+      const statHotspot = document.getElementById("statHotspotZones");
+
+      if (badge) badge.textContent = `${allHotspots.length} Active`;
+      if (statHotspot) statHotspot.textContent = `${allHotspots.length} Hotspots`;
+
+      if (allHotspots.length === 0) {
+        listContainer.innerHTML = `<div class="text-muted" style="font-size: 0.82rem; text-align: center; padding: 1.5rem 0;">No active clusters detected.</div>`;
+        return;
+      }
+
+      // Render Sidebar Hotspot Items
+      listContainer.innerHTML = allHotspots.map(h => {
+        const urgencyColor = (h.urgency || "High").toUpperCase() === "CRITICAL" ? "#ef4444" : "#f59e0b";
+        return `
+          <div class="hotspot-card-item" onclick="zoomToHotspot(${h.center[0]}, ${h.center[1]}, '${h.hotspot_id}')">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; margin-bottom: 0.25rem;">
+              <span style="font-weight: 800; color: ${urgencyColor}; font-family: monospace;">
+                <i class="fas fa-fire"></i> ${h.hotspot_id}
+              </span>
+              <span class="badge" style="background: rgba(239,68,68,0.2); color: #f87171; font-size: 0.7rem;">
+                ${h.complaint_count} Reports
+              </span>
+            </div>
+
+            <div style="font-size: 0.85rem; color: #ffffff; font-weight: 600; margin-bottom: 2px;">
+              ${h.area_name}
+            </div>
+
+            <div style="font-size: 0.75rem; color: var(--cyan-300); margin-bottom: 4px;">
+              <i class="fas fa-tag"></i> ${h.primary_category}
+            </div>
+
+            <div style="font-size: 0.74rem; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center;">
+              <span>Radius: ${h.radius_meters}m</span>
+              <span style="color: var(--teal-400);"><i class="fas fa-crosshairs"></i> Fly to area</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      // Render Glowing Hotspot Rings on Map
+      hotspotsLayer.clearLayers();
+      allHotspots.forEach(h => {
+        const circle = L.circle(h.center, {
+          color: "#ef4444",
+          weight: 2,
+          dashArray: "6, 6",
+          fillColor: "#ef4444",
+          fillOpacity: 0.15,
+          radius: h.radius_meters
+        });
+
+        const complaintsListHtml = (h.complaints || []).slice(0, 4).map(c => `
+          <li style="margin-bottom: 3px;">
+            <span style="color: var(--cyan-400); font-family: monospace;">${c.complaint_id}</span>: ${c.title}
+          </li>
+        `).join("");
+
+        circle.bindPopup(`
+          <div style="font-family: 'Plus Jakarta Sans', sans-serif; min-width: 240px; padding: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span style="font-weight: 800; color: #f87171; font-size: 0.9rem;">
+                <i class="fas fa-fire"></i> ${h.hotspot_id}
+              </span>
+              <span class="badge priority-critical">${h.complaint_count} Clustered Issues</span>
+            </div>
+            <div style="font-weight: 700; color: #ffffff; font-size: 0.95rem; margin-bottom: 4px;">${h.area_name}</div>
+            <div style="font-size: 0.78rem; color: var(--cyan-300); margin-bottom: 6px;">Primary Issue: ${h.primary_category}</div>
+            <div style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">Radius: ${h.radius_meters} meters around GPS center.</div>
+
+            <div style="font-size: 0.75rem; font-weight: 700; color: #fca5a5; margin-bottom: 4px;">Incidents in this Hotspot:</div>
+            <ul style="padding-left: 14px; font-size: 0.73rem; color: #cbd5e1; margin: 0 0 8px 0; max-height: 120px; overflow-y: auto;">
+              ${complaintsListHtml}
+            </ul>
+
+            <div style="text-align: right;">
+              <a href="/manage?search=${encodeURIComponent(h.area_name)}" class="btn btn-outline-teal btn-sm" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">
+                Manage All Clustered Issues
+              </a>
+            </div>
+          </div>
+        `);
+
+        hotspotsLayer.addLayer(circle);
+      });
+
+    } catch (err) {
+      console.error("Error loading hotspots:", err);
+    }
+  }
+
+  function zoomToHotspot(lat, lng, hotspotId) {
+    if (map) {
+      map.flyTo([lat, lng], 16, { animate: true, duration: 1.2 });
+    }
+  }
+</script>
+{% endblock %}

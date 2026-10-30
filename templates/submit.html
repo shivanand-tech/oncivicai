@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Report an Issue – CivicAI Smart Complaint Portal{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 1.5rem 5rem;">
+
+  <div style="margin-bottom: 2rem; text-align: center;">
+    <span class="ai-badge" style="margin-bottom: 0.6rem;">
+      <i class="fas fa-brain"></i> AI-Assisted Intake
+    </span>
+    <h2>Submit a Citizen Complaint</h2>
+    <p class="text-muted" style="max-width: 600px; margin: 0.5rem auto 0;">
+      Provide details of the municipal hazard. Our SmartVision AI inspects photos, verifies categories, computes
+      priority scores, and prevents duplicate work orders.
+    </p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 2rem; align-items: start;">
+
+    <!-- Left Column: Form -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fas fa-edit text-teal"></i> Incident Report Form
+        </div>
+        <span class="text-muted" style="font-size: 0.8rem;">
+          <span class="text-danger">*</span> Required fields
+        </span>
+      </div>
+
+      <form id="complaintForm" enctype="multipart/form-data">
+
+        <!-- Citizen Information -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label">Full Name <span class="required">*</span></label>
+            <input type="text" name="citizen_name" class="form-control" placeholder="e.g. Rahul Sharma" required
+              value="Rahul Sharma">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email or Phone</label>
+            <input type="text" name="citizen_contact" class="form-control" placeholder="e.g. rahul@example.com"
+              value="rahul@civicai.org">
+          </div>
+        </div>
+
+        <!-- Issue Title -->
+        <div class="form-group">
+          <label class="form-label">Complaint Title <span class="required">*</span></label>
+          <input type="text" id="inputTitle" name="title" class="form-control"
+            placeholder="Brief headline (e.g. Deep crater pothole near metro station)" required>
+        </div>
+
+        <!-- Category Selection -->
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="inputCategory" name="category" class="form-select">
+            <option value="Auto-Detect">Auto-Detect with AI (Recommended)</option>
+            <option value="Road Damage">Road Damage</option>
+            <option value="Waterlogging">Waterlogging</option>
+            <option value="Garbage">Garbage</option>
+            <option value="Streetlight">Streetlight</option>
+            <option value="Drainage">Drainage</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label class="form-label">Detailed Description <span class="required">*</span></label>
+          <textarea id="inputDescription" name="description" class="form-control"
+            placeholder="Describe the severity, depth, smell, danger to pedestrians or vehicles, or nearby landmarks..."
+            required></textarea>
+        </div>
+
+        <!-- Location Information -->
+        <div class="form-group">
+          <label class="form-label">Location Address / Landmark <span class="required">*</span></label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="inputLocation" name="location_name" class="form-control"
+              placeholder="Street, landmark, cross road..." required value="Residency Road, St. Joseph Zone">
+            <button type="button" id="btnDetectLocation" class="btn btn-secondary btn-sm"
+              title="Use My Current GPS Location" style="white-space: nowrap;">
+              <i class="fas fa-crosshairs text-teal"></i> GPS
+            </button>
+          </div>
+        </div>
+
+        <!-- Preset Location Chips -->
+        <div style="margin-top: -0.5rem; margin-bottom: 1.25rem;">
+          <span style="font-size: 0.78rem; color: var(--text-dim); margin-right: 0.4rem;">Quick Landmarks:</span>
+          <div style="display: inline-flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.25rem;">
+            <button type="button" class="btn btn-sm loc-chip" data-name="Residency Road near St. Joseph School"
+              data-lat="12.9712" data-lng="77.6015"
+              style="background: rgba(255,255,255,0.05); font-size: 0.75rem; padding: 0.2rem 0.5rem;">Residency
+              Rd</button>
+            <button type="button" class="btn btn-sm loc-chip" data-name="Koramangala 80 Feet Road junction"
+              data-lat="12.9352" data-lng="77.6245"
+              style="background: rgba(255,255,255,0.05); font-size: 0.75rem; padding: 0.2rem 0.5rem;">Koramangala
+              80ft</button>
+            <button type="button" class="btn btn-sm loc-chip" data-name="100 Feet Road Indiranagar 12th Main"
+              data-lat="12.9784" data-lng="77.6408"
+              style="background: rgba(255,255,255,0.05); font-size: 0.75rem; padding: 0.2rem 0.5rem;">Indiranagar</button>
+            <button type="button" class="btn btn-sm loc-chip" data-name="HSR Layout Sector 2 14th Main"
+              data-lat="12.9121" data-lng="77.6446"
+              style="background: rgba(255,255,255,0.05); font-size: 0.75rem; padding: 0.2rem 0.5rem;">HSR
+              Layout</button>
+          </div>
+        </div>
+
+        <input type="hidden" id="inputLat" name="latitude" value="12.9712">
+        <input type="hidden" id="inputLng" name="longitude" value="77.6015">
+
+        <!-- Image Upload Dropzone -->
+        <div class="form-group">
+          <label class="form-label">Attach Photo Evidence (Optional but recommended)</label>
+          <div class="upload-dropzone" id="dropzone">
+            <input type="file" id="fileInput" name="image" accept="image/*" style="display: none;">
+            <div class="upload-icon">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div style="font-weight: 600; color: #ffffff; margin-bottom: 0.25rem;">Drag & drop photo here or click to
+              browse</div>
+            <div style="font-size: 0.78rem; color: var(--text-dim);">Supports JPG, PNG, WEBP, SVG up to 16MB</div>
+          </div>
+
+          <!-- Quick Sample Images Picker for Testing -->
+          <div style="margin-top: 0.85rem;">
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.4rem;">
+              <i class="fas fa-magic text-teal"></i> Or click a sample issue photo for immediate testing:
+            </div>
+            <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.4rem;">
+              <div class="sample-pick-item" data-url="/static/images/samples/manhole_open_1.svg"
+                data-title="Deep open drainage manhole uncovered on busy road" data-cat="Open Manhole & Safety"
+                style="cursor: pointer; width: 68px; flex-shrink: 0; text-align: center;">
+                <img src="/static/images/samples/manhole_open_1.svg"
+                  style="width: 100%; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 2px;">Manhole</div>
+              </div>
+              <div class="sample-pick-item" data-url="/static/images/samples/pothole_crater_1.svg"
+                data-title="Massive road crater damaging two-wheelers" data-cat="Roads & Potholes"
+                style="cursor: pointer; width: 68px; flex-shrink: 0; text-align: center;">
+                <img src="/static/images/samples/pothole_crater_1.svg"
+                  style="width: 100%; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 2px;">Pothole</div>
+              </div>
+              <div class="sample-pick-item" data-url="/static/images/samples/waterlogging_1.svg"
+                data-title="Knee-deep stormwater waterlogging blocking lane" data-cat="Waterlogging & Drainage"
+                style="cursor: pointer; width: 68px; flex-shrink: 0; text-align: center;">
+                <img src="/static/images/samples/waterlogging_1.svg"
+                  style="width: 100%; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 2px;">Flooding</div>
+              </div>
+              <div class="sample-pick-item" data-url="/static/images/samples/garbage_pile_1.svg"
+                data-title="Illegal massive garbage dumping near residential gate" data-cat="Garbage & Sanitation"
+                style="cursor: pointer; width: 68px; flex-shrink: 0; text-align: center;">
+                <img src="/static/images/samples/garbage_pile_1.svg"
+                  style="width: 100%; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 2px;">Garbage</div>
+              </div>
+              <div class="sample-pick-item" data-url="/static/images/samples/electrical_wire_1.svg"
+                data-title="Sparking exposed live electrical cable dangling" data-cat="Streetlights & Electricity"
+                style="cursor: pointer; width: 68px; flex-shrink: 0; text-align: center;">
+                <img src="/static/images/samples/electrical_wire_1.svg"
+                  style="width: 100%; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.65rem; color: var(--text-dim); margin-top: 2px;">Live Wire</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview Container -->
+          <div class="image-preview-box" id="previewBox">
+            <img id="previewImg" src="" alt="Preview">
+            <button type="button" class="remove-img-btn" id="btnRemoveImg" title="Remove photo">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <input type="hidden" id="selectedSampleUrl" name="sample_url" value="">
+        </div>
+
+        <button type="submit" id="btnSubmit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 1rem;">
+          <i class="fas fa-paper-plane"></i> File Incident Report
+        </button>
+      </form>
+    </div>
+
+    <!-- Right Column: Live AI Inspector Panel -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+      <!-- SmartVision AI Card -->
+      <div class="card ai-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <span class="ai-badge"><i class="fas fa-eye"></i> SmartVision AI</span>
+          <span id="visionStatus" style="font-size: 0.75rem; color: var(--teal-400);">Standby</span>
+        </div>
+
+        <div id="visionResults">
+          <p class="text-muted" style="font-size: 0.88rem;">
+            Upload an image or pick a sample photo to run real-time visual feature detection, category classification,
+            and severity inspection.
+          </p>
+        </div>
+      </div>
+
+      <!-- Live Priority & SLA Estimator -->
+      <div class="card" style="border-color: rgba(245, 158, 11, 0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <div style="font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 0.4rem;">
+            <i class="fas fa-tachometer-alt text-warning"></i> Priority Intelligence
+          </div>
+          <span id="estPriorityBadge" class="badge priority-MEDIUM">MEDIUM • 45</span>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.3rem;">
+            <span class="text-muted">Calculated Urgency Index</span>
+            <span id="scoreText" style="font-weight: 700; color: var(--cyan-400);">45 / 100</span>
+          </div>
+          <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 9999px; overflow: hidden;">
+            <div id="scoreBar"
+              style="width: 45%; height: 100%; background: linear-gradient(90deg, #06b6d4, #f59e0b); transition: width 0.4s ease;">
+            </div>
+          </div>
+        </div>
+
+        <div id="priorityJustification"
+          style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; background: rgba(15, 23, 42, 0.5); padding: 0.75rem; border-radius: var(--radius-sm); border-left: 2px solid var(--cyan-400);">
+          Standard civic maintenance priority. As you type hazard keywords (e.g., <em>live wire, school, collapse,
+            accident</em>), the score automatically escalates.
+        </div>
+
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border-subtle); font-size: 0.82rem;">
+          <span class="text-muted">Target Resolution SLA:</span>
+          <span id="estSlaHours" style="font-weight: 700; color: #ffffff;">96 Hours (4 Days)</span>
+        </div>
+      </div>
+
+      <!-- Duplicate Radar Notice -->
+      <div class="card" style="border-color: rgba(99, 102, 241, 0.3); background: rgba(15, 23, 42, 0.6);">
+        <div
+          style="font-weight: 700; color: #c4b5fd; display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; font-size: 0.92rem;">
+          <i class="fas fa-radar"></i> Duplicate Radar Guarantee
+        </div>
+        <p class="text-muted" style="font-size: 0.82rem; line-height: 1.5;">
+          If another citizen has already reported this exact issue within a 300-meter radius, your submission will be
+          intelligently linked. This boosts the master report's priority and avoids duplicate municipal crew dispatches.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Digital Receipt Modal -->
+<div class="modal-overlay" id="receiptModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <div
+        style="font-weight: 800; font-size: 1.2rem; color: #ffffff; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fas fa-check-circle text-teal"></i> Complaint Filed Successfully
+      </div>
+      <button class="btn-close" id="btnCloseReceipt">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Digital Tracking ID</div>
+        <div id="receiptComplaintId"
+          style="font-size: 1.85rem; font-family: monospace; font-weight: 800; color: var(--cyan-400); letter-spacing: 0.05em;">
+          CV-2026-1026</div>
+        <button type="button" id="btnCopyId" class="btn btn-outline-teal btn-sm" style="margin-top: 0.5rem;">
+          <i class="fas fa-copy"></i> Copy Tracking ID
+        </button>
+      </div>
+
+      <div
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 1.25rem;">
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-dim);">AI Priority Level</div>
+          <div id="receiptPriority" style="margin-top: 2px;"></div>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-dim);">Assigned Department</div>
+          <div id="receiptDept" style="font-weight: 600; font-size: 0.9rem; color: #ffffff; margin-top: 2px;"></div>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-dim);">SLA Target Resolution</div>
+          <div id="receiptSla" style="font-weight: 600; font-size: 0.9rem; color: #fbbf24; margin-top: 2px;"></div>
+        </div>
+        <div>
+          <div style="font-size: 0.75rem; color: var(--text-dim);">Duplicate Radar Status</div>
+          <div id="receiptDuplicates" style="font-weight: 600; font-size: 0.9rem; color: #34d399; margin-top: 2px;">
+            Unique Incident</div>
+        </div>
+      </div>
+
+      <div id="receiptExplanation"
+        style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; background: #0b1325; padding: 0.85rem; border-radius: var(--radius-sm); border-left: 3px solid var(--cyan-400);">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <a href="/" class="btn btn-secondary">Home</a>
+      <a id="btnGoTrack" href="#" class="btn btn-primary">
+        <i class="fas fa-external-link-alt"></i> Track Live Status
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/submit.js') }}"></script>
+{% endblock %}

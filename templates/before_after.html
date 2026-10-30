@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Resolution Audit Gallery – CivicAI{% endblock %}
+
+{% block content %}
+<div class="container container-wide" style="padding: 2.5rem 1.5rem 5rem;">
+
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2.5rem;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.25rem;">
+        <span class="ai-badge"><i class="fas fa-check-double"></i> Transparent Audits</span>
+        <span style="font-size: 0.8rem; color: var(--teal-400);">Verified Remediations</span>
+      </div>
+      <h2>Before & After Resolution Audits</h2>
+      <p class="text-muted" style="margin-top: 0.25rem;">
+        Photographic proof submitted by field engineering squads, verified with citizen feedback ratings.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="/submit" class="btn btn-primary btn-sm">Report New Issue</a>
+      <a href="/manage?status=Resolved" class="btn btn-secondary btn-sm">View in Console</a>
+    </div>
+  </div>
+
+  <div id="resolvedGallery" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 2rem;">
+    <div style="text-align: center; padding: 3rem; grid-column: 1/-1;">
+      <i class="fas fa-circle-notch fa-spin text-teal" style="font-size: 2rem;"></i>
+      <div class="text-muted" style="margin-top: 1rem;">Loading resolution proofs...</div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const gallery = document.getElementById("resolvedGallery");
+
+  try {
+    const res = await fetch("/api/complaints?status=Resolved");
+    const data = await res.json();
+    if (!data.success) return;
+
+    const resolved = data.complaints || [];
+    if (resolved.length === 0) {
+      gallery.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align: center; padding: 3rem;">No resolved remediations logged yet.</div>`;
+      return;
+    }
+
+    gallery.innerHTML = resolved.map(c => `
+      <div class="card card-lift">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+          <div>
+            <span style="font-family: monospace; font-weight: 700; color: var(--cyan-400);">${c.complaint_id}</span>
+            <h4 style="margin-top: 2px; font-size: 1.1rem;">${c.title}</h4>
+            <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 2px;">
+              <i class="fas fa-map-marker-alt text-teal"></i> ${c.location_name}
+            </div>
+          </div>
+          ${renderPriorityBadge(c.priority, c.priority_score)}
+        </div>
+
+        <!-- Before & After Image Split -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+          <div>
+            <div style="font-size: 0.72rem; color: #f87171; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">
+              <i class="fas fa-exclamation-circle"></i> Before (Reported)
+            </div>
+            <img src="${c.image_url || '/static/images/samples/pothole_crater_1.svg'}" alt="Before" style="width: 100%; height: 160px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid rgba(239, 68, 68, 0.4);">
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: #34d399; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">
+              <i class="fas fa-check-circle"></i> After (Remediated)
+            </div>
+            <img src="${c.resolution_image_url || '/static/images/samples/pothole_resolved_1.svg'}" alt="After" style="width: 100%; height: 160px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.4);">
+          </div>
+        </div>
+
+        <!-- Resolution Notes & Rating -->
+        <div style="background: rgba(15, 23, 42, 0.7); padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-bottom: 1rem; font-size: 0.85rem;">
+          <div style="color: #ffffff; font-weight: 600; margin-bottom: 4px;">
+            <i class="fas fa-clipboard-check text-teal"></i> Remediation Notes:
+          </div>
+          <div class="text-muted" style="line-height: 1.45;">
+            ${c.resolution_notes || 'Crew completed asphalt repair and subgrade compaction. Area reopened to normal traffic.'}
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle); font-size: 0.82rem;">
+          <div>
+            <span class="text-dim">Citizen Rating:</span>
+            <span style="color: #fbbf24; margin-left: 4px;">
+              ${'★'.repeat(c.citizen_rating || 5)}${'☆'.repeat(5 - (c.citizen_rating || 5))}
+            </span>
+          </div>
+          <a href="/track?id=${c.complaint_id}" class="btn btn-outline-teal btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.65rem;">
+            Inspect Timeline <i class="fas fa-chevron-right"></i>
+          </a>
+        </div>
+      </div>
+    `).join("");
+
+  } catch (err) {
+    gallery.innerHTML = `<div class="text-danger" style="text-align: center; grid-column: 1/-1;">Error loading resolved gallery.</div>`;
+  }
+});
+</script>
+{% endblock %}
+

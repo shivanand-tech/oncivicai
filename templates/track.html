@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Track Complaint Status – CivicAI{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 1.5rem 5rem;">
+
+  <!-- Page Header -->
+  <div style="text-align: center; margin-bottom: 2.5rem;">
+    <span class="ai-badge" style="margin-bottom: 0.6rem;">
+      <i class="fas fa-search-location"></i> Live SLA Tracking
+    </span>
+    <h2>Track Citizen Complaint</h2>
+    <p class="text-muted" style="max-width: 600px; margin: 0.5rem auto 0;">
+      Enter your digital tracking ID to view real-time SLA progression, AI triage explanations, duplicate radar links,
+      and dispatch audits.
+    </p>
+
+    <!-- Search Box -->
+    <div class="card" style="max-width: 620px; margin: 1.75rem auto 0; padding: 0.85rem 1.25rem;">
+      <form id="trackForm" style="display: flex; gap: 0.75rem;">
+        <input type="text" id="trackInput" class="form-control" placeholder="Enter Complaint ID (e.g. CV-2026-1001)..."
+          value="{{ prefill_id or '' }}" required
+          style="font-family: monospace; font-size: 1.05rem; letter-spacing: 0.05em;">
+        <button type="submit" id="btnTrack" class="btn btn-primary" style="padding: 0.65rem 1.5rem;">
+          <i class="fas fa-search"></i> Inspect
+        </button>
+      </form>
+
+      <!-- Quick sample IDs -->
+      <div
+        style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.85rem; font-size: 0.8rem;">
+        <span class="text-dim">Try Sample IDs:</span>
+        <button type="button" class="btn btn-sm sample-id-chip" data-id="CV-2026-1001"
+          style="background: rgba(255,255,255,0.06); font-family: monospace; font-size: 0.78rem; padding: 0.2rem 0.5rem;">CV-2026-1001</button>
+        <button type="button" class="btn btn-sm sample-id-chip" data-id="CV-2026-1002"
+          style="background: rgba(255,255,255,0.06); font-family: monospace; font-size: 0.78rem; padding: 0.2rem 0.5rem;">CV-2026-1002
+          (Duplicate)</button>
+        <button type="button" class="btn btn-sm sample-id-chip" data-id="CV-2026-1003"
+          style="background: rgba(255,255,255,0.06); font-family: monospace; font-size: 0.78rem; padding: 0.2rem 0.5rem;">CV-2026-1003</button>
+        <button type="button" class="btn btn-sm sample-id-chip" data-id="CV-2026-1005"
+          style="background: rgba(255,255,255,0.06); font-family: monospace; font-size: 0.78rem; padding: 0.2rem 0.5rem;">CV-2026-1005</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="trackLoading" style="display: none; text-align: center; padding: 3rem;">
+    <i class="fas fa-circle-notch fa-spin text-teal" style="font-size: 2.5rem;"></i>
+    <div class="text-muted" style="margin-top: 1rem;">Querying municipal ledger and duplicate radar...</div>
+  </div>
+
+  <!-- Error State -->
+  <div id="trackError" style="display: none; max-width: 600px; margin: 2rem auto;">
+    <div class="card" style="text-align: center; border-color: rgba(239, 68, 68, 0.4); padding: 2rem;">
+      <i class="fas fa-exclamation-circle text-danger" style="font-size: 2rem; margin-bottom: 0.75rem;"></i>
+      <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Complaint Not Found</h3>
+      <p id="trackErrorMsg" class="text-muted" style="font-size: 0.9rem; margin-bottom: 1.25rem;">
+        No municipal record matches this tracking ID. Please verify your number or submit a new report.
+      </p>
+      <a href="/submit" class="btn btn-primary btn-sm">File a New Complaint</a>
+    </div>
+  </div>
+
+  <!-- Complaint Detail Container -->
+  <div id="complaintDetailContainer" style="display: none;">
+
+    <!-- Top Status Banner -->
+    <div class="card" style="margin-bottom: 2rem; border-color: rgba(6, 182, 212, 0.35);">
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle);">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <span id="detailId"
+              style="font-family: monospace; font-size: 1.5rem; font-weight: 800; color: var(--cyan-400);"></span>
+            <span id="detailStatusBadge"></span>
+            <span id="detailPriorityBadge"></span>
+          </div>
+          <div style="font-size: 0.82rem; color: var(--text-dim); margin-top: 0.35rem;">
+            Filing Date: <span id="detailCreatedAt" style="color: #ffffff;"></span>
+          </div>
+        </div>
+
+        <div style="text-align: right;">
+          <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
+            SLA Target Deadline</div>
+          <div id="detailSlaDeadline" style="font-weight: 700; color: #fbbf24; font-size: 1.05rem;"></div>
+          <div id="detailSlaStatus" style="font-size: 0.75rem; color: var(--teal-400); margin-top: 2px;"></div>
+        </div>
+      </div>
+
+      <!-- 5-Stage Status Timeline -->
+      <div style="padding: 0 1rem;">
+        <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem;">Lifecycle
+          Progression:</div>
+        <div class="timeline" id="statusTimeline">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Grid: Left Details & Right AI Engine Breakdown -->
+    <div
+      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2rem; align-items: start;">
+
+      <!-- Left Column: Complaint Specifics & Photos -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fas fa-info-circle text-teal"></i> Incident Particulars
+            </div>
+            <span id="detailCategory" class="badge" style="background: rgba(255,255,255,0.08); color: #ffffff;"></span>
+          </div>
+
+          <h3 id="detailTitle" style="font-size: 1.35rem; margin-bottom: 0.75rem; line-height: 1.3;"></h3>
+
+          <div style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1rem;">
+            Reported by: <span id="detailCitizen" style="color: #ffffff; font-weight: 600;"></span>
+          </div>
+
+          <p id="detailDescription" class="text-muted"
+            style="line-height: 1.6; font-size: 0.95rem; margin-bottom: 1.5rem;"></p>
+
+          <div
+            style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.85rem;">
+              <div>
+                <span class="text-dim">Assigned Department:</span>
+                <div id="detailDept" style="font-weight: 600; color: #ffffff; margin-top: 2px;"></div>
+              </div>
+              <div>
+                <span class="text-dim">Field Officer:</span>
+                <div id="detailOfficer" style="font-weight: 600; color: #ffffff; margin-top: 2px;"></div>
+              </div>
+              <div style="grid-column: 1 / -1;">
+                <span class="text-dim">Location Landmark & Coordinates:</span>
+                <div id="detailLocation" style="font-weight: 600; color: #ffffff; margin-top: 2px;"></div>
+                <div id="detailCoords"
+                  style="font-family: monospace; font-size: 0.78rem; color: var(--cyan-400); margin-top: 2px;"></div>
+              </div>
+              <div id="detailResolutionNotesWrap"
+                style="grid-column: 1 / -1; display: none; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-top: 0.25rem;">
+                <span
+                  style="color: #6ee7b7; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+                  <i class="fas fa-check-circle"></i> Official Remediation / Inspection Notes:
+                </span>
+                <div id="detailResolutionNotes"
+                  style="font-size: 0.88rem; color: #ffffff; margin-top: 4px; line-height: 1.45;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Photo Evidence -->
+          <div>
+            <div style="font-size: 0.9rem; font-weight: 600; color: #ffffff; margin-bottom: 0.75rem;">
+              <i class="fas fa-camera text-teal"></i> Photographic Evidence
+            </div>
+            <div id="evidenceImages" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit Log History -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fas fa-history text-teal"></i> Official Audit Trail
+            </div>
+            <span style="font-size: 0.78rem; color: var(--text-dim);"><i class="fas fa-lock"></i> Immutable Log</span>
+          </div>
+
+          <div id="auditLogList" style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Citizen Verification Rating (for Resolved Complaints) -->
+        <div id="citizenRatingBox" class="card"
+          style="display: none; border-color: rgba(16, 185, 129, 0.35); background: linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(6, 40, 30, 0.8));">
+          <div class="card-title" style="color: #6ee7b7; margin-bottom: 0.75rem;">
+            <i class="fas fa-star text-warning"></i> Verify & Rate Municipal Resolution
+          </div>
+          <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 1rem;">
+            This issue has been marked Resolved by the field squad. Please verify the remediation and submit your
+            citizen feedback.
+          </p>
+
+          <form id="ratingForm">
+            <div class="form-group">
+              <label class="form-label">Satisfaction Rating</label>
+              <div style="display: flex; gap: 0.5rem; font-size: 1.5rem; color: #fbbf24; cursor: pointer;"
+                id="starContainer">
+                <i class="fas fa-star star-btn" data-value="1"></i>
+                <i class="fas fa-star star-btn" data-value="2"></i>
+                <i class="fas fa-star star-btn" data-value="3"></i>
+                <i class="fas fa-star star-btn" data-value="4"></i>
+                <i class="fas fa-star star-btn" data-value="5"></i>
+              </div>
+              <input type="hidden" id="inputRating" value="5">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Citizen Feedback Notes</label>
+              <textarea id="inputFeedback" class="form-control" style="min-height: 70px;"
+                placeholder="Was the patch satisfactory? Was debris completely cleaned up?"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">
+              <i class="fas fa-check"></i> Submit Verification
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Right Column: AI Triage & Duplicate Radar Breakdown -->
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+        <!-- Priority Scoring Engine Breakdown -->
+        <div class="card ai-panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <span class="ai-badge"><i class="fas fa-microchip"></i> Priority Intelligence</span>
+            <span id="aiScoreTag" style="font-weight: 800; font-size: 1.1rem; color: var(--cyan-400);"></span>
+          </div>
+
+          <div id="aiExplanation"
+            style="font-size: 0.88rem; color: #ffffff; line-height: 1.5; margin-bottom: 1.25rem; background: rgba(15, 23, 42, 0.6); padding: 0.85rem; border-radius: var(--radius-sm); border-left: 3px solid var(--cyan-400);">
+            <!-- Explanation string -->
+          </div>
+
+          <div
+            style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+            Scoring Factors & Weights
+          </div>
+
+          <div id="aiFactorsList" style="display: flex; flex-direction: column; gap: 0.65rem;">
+            <!-- Factor items populated by JS -->
+          </div>
+        </div>
+
+        <!-- Executive Action Brief -->
+        <div class="card" style="border-color: rgba(6, 182, 212, 0.3);">
+          <div class="card-header">
+            <div class="card-title" style="font-size: 1rem;">
+              <i class="fas fa-clipboard-list text-teal"></i> Field Action Brief
+            </div>
+            <span class="badge"
+              style="background: rgba(6, 182, 212, 0.15); color: var(--cyan-300);">Auto-Generated</span>
+          </div>
+
+          <div id="actionBriefContent" style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+            <!-- Action brief fields -->
+          </div>
+        </div>
+
+        <!-- Duplicate Radar Analysis -->
+        <div class="card" style="border-color: rgba(99, 102, 241, 0.35);">
+          <div class="card-header">
+            <div class="card-title" style="font-size: 1rem; color: #c4b5fd;">
+              <i class="fas fa-radar"></i> Duplicate Radar Scan
+            </div>
+            <span id="duplicateCountBadge" class="badge" style="background: rgba(99, 102, 241, 0.2); color: #c4b5fd;">0
+              Found</span>
+          </div>
+
+          <div id="duplicateRadarList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/track.js') }}"></script>
+{% endblock %}

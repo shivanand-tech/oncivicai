@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}CivicAI – Smart Citizen Complaint Management System{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section style="padding: 4.5rem 0 3rem; position: relative;">
+  <div class="container">
+    <div style="max-width: 840px; margin: 0 auto; text-align: center;">
+      <div style="display: inline-flex; align-items: center; gap: 0.6rem; background: rgba(6, 182, 212, 0.12); border: 1px solid rgba(6, 182, 212, 0.35); padding: 0.35rem 1rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600; color: var(--cyan-300); margin-bottom: 1.5rem;">
+        <i class="fas fa-microchip text-teal"></i> Next-Gen Smart City Triage Platform
+      </div>
+
+      <h1 style="font-size: 3.2rem; font-weight: 800; line-height: 1.15; margin-bottom: 1.25rem;">
+        Smarter Cities. Transparent Governance. <br>
+        <span class="text-gradient">Explainable AI Triage.</span>
+      </h1>
+
+      <p class="text-muted" style="font-size: 1.15rem; max-width: 680px; margin: 0 auto 2.25rem; line-height: 1.6;">
+        Report infrastructure hazards in under 60 seconds. Our neural engine automates category detection, eliminates duplicate submissions, calculates transparent priority scores, and tracks field resolution in real time.
+      </p>
+
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2.75rem;">
+        <a href="/portal" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #06b6d4, #0284c7); box-shadow: 0 0 20px rgba(6,182,212,0.45); border: none;">
+          <i class="fas fa-layer-group"></i> All-In-One Unified Portal
+        </a>
+        <a href="/submit" class="btn btn-outline-teal btn-lg">
+          <i class="fas fa-camera"></i> Report Problem
+        </a>
+        <a href="/track" class="btn btn-secondary btn-lg">
+          <i class="fas fa-search-location"></i> Track Status
+        </a>
+        <a href="/map" class="btn btn-secondary btn-lg">
+          <i class="fas fa-map-marked-alt"></i> City Map
+        </a>
+        <a href="/admin" class="btn btn-secondary btn-lg">
+          <i class="fas fa-chart-line"></i> Dashboard
+        </a>
+      </div>
+
+      <!-- Quick Search Bar -->
+      <div class="card" style="max-width: 580px; margin: 0 auto; padding: 0.75rem 1rem; border-color: rgba(6, 182, 212, 0.35); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+        <form action="/track" method="GET" style="display: flex; gap: 0.65rem;">
+          <input type="text" name="id" class="form-control" placeholder="Enter Complaint ID (e.g. CV-2026-1001)..." style="background: transparent; border: none; font-size: 0.95rem;" required>
+          <button type="submit" class="btn btn-primary btn-sm" style="padding: 0.6rem 1.25rem;">
+            <i class="fas fa-arrow-right"></i> Track
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 Key Statistics Cards -->
+<section style="padding: 1.5rem 0 3.5rem;">
+  <div class="container">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;">
+      
+      <!-- Total Complaints -->
+      <div class="stat-card stat-total">
+        <div class="stat-header">
+          <span class="stat-label">Total Complaints</span>
+          <div class="stat-icon">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+        </div>
+        <div id="statTotal" class="stat-value">--</div>
+        <div class="stat-meta">
+          <i class="fas fa-database text-teal"></i>
+          <span>All registered citizen reports</span>
+        </div>
+      </div>
+
+      <!-- Pending Complaints -->
+      <div class="stat-card stat-pending">
+        <div class="stat-header">
+          <span class="stat-label">Pending Complaints</span>
+          <div class="stat-icon">
+            <i class="fas fa-clock"></i>
+          </div>
+        </div>
+        <div id="statPending" class="stat-value">--</div>
+        <div class="stat-meta">
+          <i class="fas fa-tasks text-muted"></i>
+          <span>Submitted & Under Review</span>
+        </div>
+      </div>
+
+      <!-- Resolved Complaints -->
+      <div class="stat-card stat-resolved">
+        <div class="stat-header">
+          <span class="stat-label">Resolved Complaints</span>
+          <div class="stat-icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+        </div>
+        <div id="statResolved" class="stat-value">--</div>
+        <div class="stat-meta">
+          <i class="fas fa-shield-alt text-success"></i>
+          <span>Verified with before/after photos</span>
+        </div>
+      </div>
+
+      <!-- Urgent Complaints -->
+      <div class="stat-card stat-urgent">
+        <div class="stat-header">
+          <span class="stat-label">Urgent Complaints</span>
+          <div class="stat-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+        </div>
+        <div id="statUrgent" class="stat-value">--</div>
+        <div class="stat-meta">
+          <i class="fas fa-bolt text-danger"></i>
+          <span>Critical & High priority hazards</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- 4-Step Transparent Workflow -->
+<section style="padding: 3.5rem 0; background: rgba(15, 23, 42, 0.45); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+  <div class="container">
+    <div style="text-align: center; margin-bottom: 3rem;">
+      <span class="ai-badge" style="margin-bottom: 0.75rem;"><i class="fas fa-cogs"></i> Automated Workflow</span>
+      <h2>How CivicAI Powers Urban Resolution</h2>
+      <p class="text-muted" style="max-width: 600px; margin: 0.5rem auto 0;">No endless bureaucratic black-holes. Every submission undergoes automated computer triage and transparent SLA accountability.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+      <div class="card card-lift">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: var(--cyan-400); margin-bottom: 1.25rem;">
+          1
+        </div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Snap & Geotag</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">
+          Citizens take a photo and pin their location. SmartVision AI detects features (pothole cavity, exposed wires, garbage debris) and predicts category automatically.
+        </p>
+      </div>
+
+      <div class="card card-lift">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fbbf24; margin-bottom: 1.25rem;">
+          2
+        </div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">AI Priority & Deduplication</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">
+          The engine computes an explainable 0-100 score based on hazard severity and footfall. Duplicate Radar checks nearby radius to prevent redundant crew dispatch.
+        </p>
+      </div>
+
+      <div class="card card-lift">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #a5b4fc; margin-bottom: 1.25rem;">
+          3
+        </div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Department Routing & SLA</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">
+          Automatically routes to PWD, SWM, BESCOM or BWSSB with an executive action brief. A strict SLA clock counts down to target resolution.
+        </p>
+      </div>
+
+      <div class="card card-lift">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #34d399; margin-bottom: 1.25rem;">
+          4
+        </div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Citizen Verification & Rating</h3>
+        <p class="text-muted" style="font-size: 0.9rem;">
+          Engineers attach photographic proof upon completion. Citizens verify the fix with a 5-star rating, closing the feedback loop.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Live Complaints Feed Showcase -->
+<section style="padding: 4rem 0;">
+  <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <span class="ai-badge" style="margin-bottom: 0.5rem;"><i class="fas fa-stream"></i> Transparent Registry</span>
+        <h2>Live Public Complaints Feed</h2>
+        <p class="text-muted">Explore public complaints processed and prioritized by CivicAI.</p>
+      </div>
+      <div>
+        <a href="/manage" class="btn btn-outline-teal btn-sm">
+          <i class="fas fa-list"></i> View All in Console
+        </a>
+      </div>
+    </div>
+
+    <div id="recentComplaintsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;">
+      <div class="card" style="text-align: center; padding: 3rem;">
+        <i class="fas fa-circle-notch fa-spin text-teal" style="font-size: 2rem;"></i>
+        <div class="text-muted" style="margin-top: 1rem;">Loading live complaints...</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Call to Action Banner -->
+<section style="padding: 2rem 0 5rem;">
+  <div class="container">
+    <div class="card" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(8, 28, 48, 0.92)); border: 1px solid rgba(6, 182, 212, 0.4); text-align: center; padding: 3.5rem 2rem; position: relative;">
+      <h2 style="font-size: 2.2rem; margin-bottom: 1rem;">Spot an issue in your neighborhood?</h2>
+      <p class="text-muted" style="max-width: 620px; margin: 0 auto 2rem; font-size: 1.05rem;">
+        Do not let broken roads, exposed high-voltage cables, or overflowing drains go unresolved. Report them now and hold authorities accountable with transparent AI tracking.
+      </p>
+      <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+        <a href="/submit" class="btn btn-primary btn-lg">
+          <i class="fas fa-camera"></i> Report a Problem
+        </a>
+        <a href="/track" class="btn btn-secondary btn-lg">
+          <i class="fas fa-search-location"></i> Track Existing Issue
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/home.js') }}"></script>
+{% endblock %}
