@@ -1,0 +1,1068 @@
+{% extends "base.html" %}
+
+{% block title %}CivicAI – All-In-One Unified Smart City Command Hub{% endblock %}
+
+{% block head_extra %}
+<style>
+  .portal-tab-bar {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.5rem;
+    background: rgba(15, 23, 42, 0.85);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    margin-bottom: 2rem;
+    position: sticky;
+    top: 75px;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .portal-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.15rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+  .portal-tab-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .portal-tab-btn.active {
+    color: #ffffff;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(14, 165, 233, 0.25));
+    border-color: rgba(6, 182, 212, 0.5);
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+  }
+  .portal-tab-btn.active i {
+    color: var(--teal-400);
+  }
+  .portal-view {
+    display: none;
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  .portal-view.active {
+    display: block;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .live-pulse-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 9999px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34d399;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section style="padding: 2.5rem 0 5rem;">
+  <div class="container">
+    
+    <!-- Portal Header Banner -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1.5rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.65rem;">
+          <span class="live-pulse-badge">
+            <span class="pulse-dot" style="margin: 0;"></span> Live System Active
+          </span>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Civic Neural Grid: 40 Pre-Seeded Incidents</span>
+        </div>
+        <h1 style="font-size: 2.35rem; font-weight: 800; margin: 0;">
+          CivicAI <span class="text-gradient">All-In-One Master Hub</span>
+        </h1>
+        <p class="text-muted" style="margin: 0.35rem 0 0; font-size: 1rem;">
+          One unified portal combining citizen reporting, real-time tracking, GIS hotspot radar, admin intelligence, and explainable AI triage.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+        <button id="btnRefreshAll" class="btn btn-outline-teal btn-sm">
+          <i class="fas fa-sync-alt"></i> Refresh All Data
+        </button>
+        <a href="/admin" target="_blank" class="btn btn-secondary btn-sm">
+          <i class="fas fa-external-link-alt"></i> Open Standalone Dashboard
+        </a>
+      </div>
+    </div>
+
+    <!-- Live Unified KPI Strip -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+      <div class="stat-card" style="padding: 1.15rem;">
+        <div class="stat-header">
+          <span class="stat-label">Total Incidents</span>
+          <i class="fas fa-database text-teal"></i>
+        </div>
+        <div id="portalKpiTotal" class="stat-value" style="font-size: 2rem;">40</div>
+        <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">Live SQLite records</div>
+      </div>
+      <div class="stat-card" style="padding: 1.15rem;">
+        <div class="stat-header">
+          <span class="stat-label">Pending</span>
+          <i class="fas fa-clock text-warning"></i>
+        </div>
+        <div id="portalKpiPending" class="stat-value" style="font-size: 2rem; color: var(--warning);">15</div>
+        <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">Submitted / In Review</div>
+      </div>
+      <div class="stat-card" style="padding: 1.15rem;">
+        <div class="stat-header">
+          <span class="stat-label">Resolved</span>
+          <i class="fas fa-check-circle text-success"></i>
+        </div>
+        <div id="portalKpiResolved" class="stat-value" style="font-size: 2rem; color: var(--success);">5</div>
+        <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">Verified with proof</div>
+      </div>
+      <div class="stat-card" style="padding: 1.15rem;">
+        <div class="stat-header">
+          <span class="stat-label">Urgent Hazards</span>
+          <i class="fas fa-exclamation-triangle text-danger"></i>
+        </div>
+        <div id="portalKpiUrgent" class="stat-value" style="font-size: 2rem; color: var(--critical);">24</div>
+        <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">High / Critical tier</div>
+      </div>
+      <div class="stat-card" style="padding: 1.15rem;">
+        <div class="stat-header">
+          <span class="stat-label">Active Hotspots</span>
+          <i class="fas fa-bullseye text-teal"></i>
+        </div>
+        <div id="portalKpiHotspots" class="stat-value" style="font-size: 2rem; color: var(--cyan-300);">6</div>
+        <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">400m density clusters</div>
+      </div>
+      <div class="stat-card" style="padding: 1.15rem;">
+        <div class="stat-header">
+          <span class="stat-label">Avg Resolution</span>
+          <i class="fas fa-stopwatch text-teal"></i>
+        </div>
+        <div id="portalKpiSla" class="stat-value" style="font-size: 2rem;">26h</div>
+        <div class="text-muted" style="font-size: 0.75rem; margin-top: 0.25rem;">Target SLA velocity</div>
+      </div>
+    </div>
+
+    <!-- Sticky All-In-One Module Tab Bar -->
+    <div class="portal-tab-bar">
+      <button class="portal-tab-btn active" data-tab="tab-overview">
+        <i class="fas fa-home"></i> 1. Overview Hub
+      </button>
+      <button class="portal-tab-btn" data-tab="tab-submit">
+        <i class="fas fa-plus-circle"></i> 2. File Complaint (AI Triage)
+      </button>
+      <button class="portal-tab-btn" data-tab="tab-track">
+        <i class="fas fa-search-location"></i> 3. Track Status
+      </button>
+      <button class="portal-tab-btn" data-tab="tab-map">
+        <i class="fas fa-map-marked-alt"></i> 4. City Pulse Map & Hotspots
+      </button>
+      <button class="portal-tab-btn" data-tab="tab-admin">
+        <i class="fas fa-chart-line"></i> 5. Executive Analytics
+      </button>
+      <button class="portal-tab-btn" data-tab="tab-manage">
+        <i class="fas fa-tasks"></i> 6. Manage & Dispatch
+      </button>
+      <button class="portal-tab-btn" data-tab="tab-sandbox" style="border: 1px solid rgba(6, 182, 212, 0.4); color: var(--cyan-300);">
+        <i class="fas fa-brain"></i> 7. AI Explainability Sandbox
+      </button>
+    </div>
+
+    <!-- TAB 1: OVERVIEW HUB -->
+    <div id="tab-overview" class="portal-view active">
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; align-items: start;">
+        
+        <!-- Quick Action Cards Grid -->
+        <div>
+          <h3 style="font-size: 1.35rem; margin-bottom: 1.25rem;"><i class="fas fa-th-large text-teal"></i> Platform Capabilities</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+            
+            <div class="card card-lift" style="cursor: pointer;" onclick="switchPortalTab('tab-submit')">
+              <div style="font-size: 1.75rem; color: var(--teal-400); margin-bottom: 0.75rem;"><i class="fas fa-camera"></i></div>
+              <h4 style="margin-bottom: 0.4rem;">Submit with AI Triage</h4>
+              <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 1rem;">File incident reports with GPS coordinates, live vision scan, and instant explainable priority estimation.</p>
+              <span class="btn btn-outline-teal btn-sm">Open Submission &rarr;</span>
+            </div>
+
+            <div class="card card-lift" style="cursor: pointer;" onclick="switchPortalTab('tab-track')">
+              <div style="font-size: 1.75rem; color: #38bdf8; margin-bottom: 0.75rem;"><i class="fas fa-search-location"></i></div>
+              <h4 style="margin-bottom: 0.4rem;">Citizen Tracking Portal</h4>
+              <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 1rem;">Inspect live 5-stage progression timeline, SLA deadlines, assigned field officers, and submit 5-star ratings.</p>
+              <span class="btn btn-outline-teal btn-sm">Track Complaints &rarr;</span>
+            </div>
+
+            <div class="card card-lift" style="cursor: pointer;" onclick="switchPortalTab('tab-map')">
+              <div style="font-size: 1.75rem; color: #f59e0b; margin-bottom: 0.75rem;"><i class="fas fa-map-marked-alt"></i></div>
+              <h4 style="margin-bottom: 0.4rem;">Geospatial Hotspot Radar</h4>
+              <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 1rem;">Explore Leaflet.js map with color-coded priority pins, interactive popups, and automated 400m hotspot rings.</p>
+              <span class="btn btn-outline-teal btn-sm">Explore Map &rarr;</span>
+            </div>
+
+            <div class="card card-lift" style="cursor: pointer;" onclick="switchPortalTab('tab-manage')">
+              <div style="font-size: 1.75rem; color: #10b981; margin-bottom: 0.75rem;"><i class="fas fa-tasks"></i></div>
+              <h4 style="margin-bottom: 0.4rem;">Management & Dispatch</h4>
+              <p class="text-muted" style="font-size: 0.88rem; margin-bottom: 1rem;">Filter database records, reassign to departments (PWD, BWSSB, BESCOM), and transition statuses to Resolved.</p>
+              <span class="btn btn-outline-teal btn-sm">Manage Workflow &rarr;</span>
+            </div>
+
+          </div>
+
+          <!-- Live Public Feed Preview -->
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+              <h3 style="font-size: 1.15rem; margin: 0;"><i class="fas fa-stream text-teal"></i> Recent Complaints in Database</h3>
+              <button class="btn btn-outline-teal btn-sm" onclick="switchPortalTab('tab-manage')">View All 40 &rarr;</button>
+            </div>
+            <div id="portalRecentComplaints" style="display: flex; flex-direction: column; gap: 0.85rem;">
+              <div style="text-align: center; padding: 2rem;"><i class="fas fa-circle-notch fa-spin text-teal"></i> Loading recent records...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hotspot Radar Sidebar -->
+        <div>
+          <div class="card" style="margin-bottom: 1.5rem; border-color: rgba(6, 182, 212, 0.35);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h4 style="margin: 0; font-size: 1.1rem;"><i class="fas fa-radar text-teal"></i> Active Hotspot Radar</h4>
+              <span class="badge badge-high">6 Clusters</span>
+            </div>
+            <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 1rem;">Geodesic density engine groups complaints within 400m radius:</p>
+            <div id="portalHotspotsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <div style="text-align: center; padding: 1rem;"><i class="fas fa-circle-notch fa-spin text-teal"></i> Detecting hotspots...</div>
+            </div>
+          </div>
+
+          <!-- 1-Click Competition Test Box -->
+          <div class="card" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(15, 23, 42, 0.8)); border-color: rgba(6, 182, 212, 0.4);">
+            <div style="font-weight: 700; color: #ffffff; font-size: 1.05rem; margin-bottom: 0.5rem;">
+              <i class="fas fa-vial text-teal"></i> Judge Test Showcase
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5;">
+              Instantly test the user-specified complaint: <br>
+              <em style="color: #ffffff;">"Water is entering houses because of road flooding."</em>
+            </p>
+            <button class="btn btn-primary btn-sm" style="width: 100%;" onclick="runSandboxTest()">
+              <i class="fas fa-bolt"></i> Run Live AI Test
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: FILE COMPLAINT (SUBMIT) -->
+    <div id="tab-submit" class="portal-view">
+      <div class="card" style="max-width: 900px; margin: 0 auto; padding: 2rem;">
+        <div style="margin-bottom: 1.75rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
+          <h2 style="font-size: 1.75rem; margin: 0 0 0.5rem;"><i class="fas fa-plus-circle text-teal"></i> Submit Citizen Complaint</h2>
+          <p class="text-muted" style="margin: 0;">AI will automatically classify category, predict urgency, and calculate target SLA.</p>
+        </div>
+
+        <form id="portalSubmitForm">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+              <label class="form-label">Citizen Name *</label>
+              <input type="text" id="pInputName" name="citizen_name" class="form-control" value="Ananya Roy" required>
+            </div>
+            <div>
+              <label class="form-label">Contact / Email *</label>
+              <input type="text" id="pInputContact" name="citizen_contact" class="form-control" value="ananya.demo@civicai.demo" required>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 1.25rem;">
+            <label class="form-label">Complaint Title *</label>
+            <input type="text" id="pInputTitle" name="title" class="form-control" value="Severe road flooding inundating homes" required>
+          </div>
+
+          <div style="margin-bottom: 1.25rem;">
+            <label class="form-label">Detailed Description *</label>
+            <textarea id="pInputDesc" name="description" class="form-control" rows="3" required>Water is entering houses because of road flooding.</textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+              <label class="form-label">Category</label>
+              <select id="pInputCategory" name="category" class="form-control">
+                <option value="Auto-Detect">✨ Auto-Detect with AI</option>
+                <option value="Road Damage">Road Damage</option>
+                <option value="Waterlogging">Waterlogging</option>
+                <option value="Garbage">Garbage</option>
+                <option value="Streetlight">Streetlight</option>
+                <option value="Drainage">Drainage</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Location Name</label>
+              <input type="text" id="pInputLocation" name="location_name" class="form-control" value="Koramangala 4th Block, 80 Feet Road" required>
+            </div>
+          </div>
+
+          <input type="hidden" id="pInputLat" name="latitude" value="12.9345">
+          <input type="hidden" id="pInputLng" name="longitude" value="77.6250">
+
+          <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
+            <button type="submit" id="btnPortalSubmit" class="btn btn-primary btn-lg">
+              <i class="fas fa-paper-plane"></i> Submit Complaint & Run AI Triage
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="presetFloodCase()">
+              <i class="fas fa-magic text-teal"></i> Load Judge Test Preset
+            </button>
+          </div>
+        </form>
+
+        <!-- Submission Result Box -->
+        <div id="portalSubmitResult" style="display: none; margin-top: 2rem; padding: 1.5rem; background: rgba(6, 182, 212, 0.08); border: 1px solid var(--teal-400); border-radius: var(--radius-md);">
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: TRACK COMPLAINT -->
+    <div id="tab-track" class="portal-view">
+      <div class="card" style="max-width: 950px; margin: 0 auto; padding: 2rem;">
+        <div style="margin-bottom: 1.75rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
+          <h2 style="font-size: 1.75rem; margin: 0 0 0.5rem;"><i class="fas fa-search-location text-teal"></i> Real-Time Citizen Tracking</h2>
+          <p class="text-muted" style="margin: 0;">Enter any complaint tracking ID or click a preset below to view the immutable 5-stage lifecycle timeline.</p>
+        </div>
+
+        <!-- Sample ID Chips -->
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+          <span style="font-size: 0.85rem; color: var(--text-muted);">Quick Sample IDs:</span>
+          <button class="badge badge-neutral" style="cursor: pointer;" onclick="quickTrack('CV-2026-1001')">CV-2026-1001 (Waterlogging)</button>
+          <button class="badge badge-neutral" style="cursor: pointer;" onclick="quickTrack('CV-2026-1007')">CV-2026-1007 (Drainage Manhole)</button>
+          <button class="badge badge-neutral" style="cursor: pointer;" onclick="quickTrack('CV-2026-1011')">CV-2026-1011 (Road Crater)</button>
+          <button class="badge badge-neutral" style="cursor: pointer;" onclick="quickTrack('CV-2026-1016')">CV-2026-1016 (Streetlight)</button>
+          <button class="badge badge-neutral" style="cursor: pointer;" onclick="quickTrack('CV-2026-1021')">CV-2026-1021 (Garbage)</button>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 2rem;">
+          <input type="text" id="pTrackInput" class="form-control" placeholder="Enter Complaint ID (e.g. CV-2026-1001)..." value="CV-2026-1001">
+          <button class="btn btn-primary" onclick="executeTrack()"><i class="fas fa-search"></i> Track</button>
+        </div>
+
+        <div id="pTrackOutput">
+          <div style="text-align: center; padding: 2rem;"><i class="fas fa-circle-notch fa-spin text-teal"></i> Fetching complaint timeline...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: CITY PULSE MAP -->
+    <div id="tab-map" class="portal-view">
+      <div class="card" style="padding: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <h2 style="font-size: 1.5rem; margin: 0;"><i class="fas fa-map-marked-alt text-teal"></i> Interactive Incident Map & Hotspot Radar</h2>
+            <p class="text-muted" style="font-size: 0.88rem; margin: 0.25rem 0 0;">Priority pins: Red (High), Amber (Medium), Green (Low), Teal (Resolved). 400m glowing rings indicate density hotspots.</p>
+          </div>
+          <div style="display: flex; gap: 0.65rem;">
+            <select id="pMapCatFilter" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onchange="filterPortalMap()">
+              <option value="All">All Categories</option>
+              <option value="Road Damage">Road Damage</option>
+              <option value="Waterlogging">Waterlogging</option>
+              <option value="Drainage">Drainage</option>
+              <option value="Garbage">Garbage</option>
+              <option value="Streetlight">Streetlight</option>
+              <option value="Other">Other</option>
+            </select>
+            <a href="/map" target="_blank" class="btn btn-outline-teal btn-sm"><i class="fas fa-expand"></i> Fullscreen Map</a>
+          </div>
+        </div>
+
+        <div id="portalMapContainer" style="height: 540px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); overflow: hidden;"></div>
+      </div>
+    </div>
+
+    <!-- TAB 5: EXECUTIVE ANALYTICS -->
+    <div id="tab-admin" class="portal-view">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+        <div class="card">
+          <h4 style="margin-bottom: 1rem;"><i class="fas fa-chart-pie text-teal"></i> Complaints by Category</h4>
+          <div style="height: 280px; position: relative;">
+            <canvas id="pCategoryChart"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <h4 style="margin-bottom: 1rem;"><i class="fas fa-chart-bar text-teal"></i> Priority Distribution</h4>
+          <div style="height: 280px; position: relative;">
+            <canvas id="pPriorityChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4 style="margin-bottom: 1rem;"><i class="fas fa-building text-teal"></i> Department Resolution Velocity</h4>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Department</th>
+                <th>Active Work Orders</th>
+                <th>Resolved Jobs</th>
+                <th>Avg SLA Window</th>
+              </tr>
+            </thead>
+            <tbody id="pDeptTableBody">
+              <tr><td colspan="4" style="text-align: center;"><i class="fas fa-circle-notch fa-spin text-teal"></i> Loading department metrics...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: MANAGEMENT CONSOLE -->
+    <div id="tab-manage" class="portal-view">
+      <div class="card" style="padding: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+          <h2 style="font-size: 1.5rem; margin: 0;"><i class="fas fa-tasks text-teal"></i> Complaint Management & Dispatch Console</h2>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="pManageSearch" class="form-control" placeholder="Search title, ID, area..." style="width: 240px; font-size: 0.85rem;" oninput="filterPortalTable()">
+            <select id="pManageStatusFilter" class="form-control" style="width: auto; font-size: 0.85rem;" onchange="filterPortalTable()">
+              <option value="All">All Statuses</option>
+              <option value="Submitted">Submitted</option>
+              <option value="Under Review">Under Review</option>
+              <option value="Assigned">Assigned</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title & Area</th>
+                <th>Category</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Department</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="pManageTableBody">
+              <tr><td colspan="7" style="text-align: center;"><i class="fas fa-circle-notch fa-spin text-teal"></i> Loading database complaints...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 7: AI EXPLAINABILITY SANDBOX -->
+    <div id="tab-sandbox" class="portal-view">
+      <div class="card" style="max-width: 880px; margin: 0 auto; padding: 2.25rem; border-color: rgba(6, 182, 212, 0.45);">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+          <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(6, 182, 212, 0.15); display: flex; align-items: center; justify-content: center; color: var(--teal-400); font-size: 1.25rem;">
+            <i class="fas fa-brain"></i>
+          </div>
+          <div>
+            <h2 style="font-size: 1.6rem; margin: 0;">Explainable AI Priority Engine</h2>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">Transparent, deterministic NLP rules & hazard scoring. No opaque black-box APIs.</div>
+          </div>
+        </div>
+
+        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.5rem;">
+          Test how CivicAI transparently evaluates complaints, detects property danger, and synthesizes clear, human-understandable justifications.
+        </p>
+
+        <div style="background: rgba(15, 23, 42, 0.75); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.5rem;">
+          <label class="form-label" style="color: var(--teal-400); font-weight: 700;">Complaint Text to Evaluate:</label>
+          <input type="text" id="sandboxInput" class="form-control" value="Water is entering houses because of road flooding." style="font-size: 1.05rem; padding: 0.85rem 1rem;">
+          <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">
+            <button class="badge badge-neutral" style="cursor: pointer;" onclick="setSandboxText('Water is entering houses because of road flooding.')">Flood Entering Houses (User Case)</button>
+            <button class="badge badge-neutral" style="cursor: pointer;" onclick="setSandboxText('Exposed high voltage electrical wire sparking over school footpath.')">Live Sparking Wire</button>
+            <button class="badge badge-neutral" style="cursor: pointer;" onclick="setSandboxText('Open sewer manhole cover missing on footpath.')">Open Sewer Manhole</button>
+            <button class="badge badge-neutral" style="cursor: pointer;" onclick="setSandboxText('Streetlight not glowing at main dark intersection.')">Dark Streetlight</button>
+            <button class="badge badge-neutral" style="cursor: pointer;" onclick="setSandboxText('Park bench paint peeling slightly.')">Faded Park Bench</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-lg" onclick="runSandboxTest()" style="margin-bottom: 1.5rem;">
+          <i class="fas fa-cogs"></i> Evaluate with AI Engine
+        </button>
+
+        <!-- Live Evaluation Result Box -->
+        <div id="sandboxResultBox" style="background: #08101e; border: 1px solid rgba(6, 182, 212, 0.35); border-radius: var(--radius-md); padding: 1.5rem;">
+          <div style="color: var(--text-muted); text-align: center;">Click "Evaluate with AI Engine" to test transparent triage.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Manage Status Update Modal -->
+<div id="portalModal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 id="pModalTitle" style="font-size: 1.2rem; margin: 0;">Update Complaint</h3>
+      <button class="modal-close-btn" onclick="closePortalModal()">&times;</button>
+    </div>
+    <form id="pModalForm">
+      <input type="hidden" id="pModalId">
+      <div style="margin-bottom: 1rem;">
+        <label class="form-label">Update Status</label>
+        <select id="pModalStatus" class="form-control">
+          <option value="Submitted">Submitted</option>
+          <option value="Under Review">Under Review</option>
+          <option value="Assigned">Assigned</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label class="form-label">Assign Department</label>
+        <select id="pModalDept" class="form-control">
+          <option value="Public Works Department (PWD)">Public Works Department (PWD)</option>
+          <option value="Water Supply & Sewerage Board (BWSSB)">Water Supply & Sewerage Board (BWSSB)</option>
+          <option value="Electricity Supply Corporation (BESCOM)">Electricity Supply Corporation (BESCOM)</option>
+          <option value="Solid Waste Management (SWM)">Solid Waste Management (SWM)</option>
+          <option value="Municipal Corporation General Triage">Municipal Corporation General Triage</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 1rem;">
+        <label class="form-label">Field Officer</label>
+        <input type="text" id="pModalOfficer" class="form-control" value="S. Patil (Stormwater Engineer)">
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <label class="form-label">Remediation / Field Notes</label>
+        <textarea id="pModalNotes" class="form-control" rows="2">Action taken: Crews dispatched with high-capacity dewatering pump. Catch-basin silt cleared.</textarea>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="btn btn-secondary" onclick="closePortalModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let portalComplaints = [];
+  let portalMap = null;
+  let portalMarkers = [];
+  let catChart = null;
+  let prioChart = null;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Tab switching
+    document.querySelectorAll(".portal-tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        switchPortalTab(btn.dataset.tab);
+      });
+    });
+
+    // Initial data load
+    loadPortalData();
+
+    // Submit handler
+    const submitForm = document.getElementById("portalSubmitForm");
+    if (submitForm) {
+      submitForm.addEventListener("submit", handlePortalSubmit);
+    }
+
+    // Modal form handler
+    const modalForm = document.getElementById("pModalForm");
+    if (modalForm) {
+      modalForm.addEventListener("submit", handleModalSubmit);
+    }
+
+    // Refresh button
+    const btnRef = document.getElementById("btnRefreshAll");
+    if (btnRef) {
+      btnRef.addEventListener("click", () => {
+        loadPortalData();
+        showToast("All portal data refreshed!", "info");
+      });
+    }
+
+    // Auto-load track CV-2026-1001
+    executeTrack("CV-2026-1001");
+  });
+
+  function switchPortalTab(tabId) {
+    document.querySelectorAll(".portal-tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".portal-view").forEach(v => v.classList.remove("active"));
+
+    const btn = document.querySelector(`.portal-tab-btn[data-tab="${tabId}"]`);
+    if (btn) btn.classList.add("active");
+
+    const view = document.getElementById(tabId);
+    if (view) view.classList.add("active");
+
+    // Initialize or resize map if switching to map tab
+    if (tabId === "tab-map") {
+      setTimeout(() => {
+        initPortalMap();
+        if (portalMap) portalMap.invalidateSize();
+      }, 150);
+    }
+
+    // Render charts if switching to admin tab
+    if (tabId === "tab-admin") {
+      setTimeout(renderPortalCharts, 150);
+    }
+  }
+
+  async function loadPortalData() {
+    try {
+      // 1. Fetch Stats
+      const resStats = await fetch("/api/stats");
+      const stats = await resStats.json();
+      if (stats.success) {
+        document.getElementById("portalKpiTotal").textContent = stats.total_complaints;
+        document.getElementById("portalKpiPending").textContent = stats.pending_complaints;
+        document.getElementById("portalKpiResolved").textContent = stats.resolved_complaints;
+        document.getElementById("portalKpiUrgent").textContent = stats.urgent_complaints || stats.critical_unresolved;
+        document.getElementById("portalKpiSla").textContent = `${stats.avg_resolution_hours}h`;
+
+        renderDeptTable(stats.department_performance);
+      }
+
+      // 2. Fetch Complaints
+      const resComp = await fetch("/api/complaints?include_duplicates=true");
+      const cData = await resComp.json();
+      if (cData.success) {
+        portalComplaints = cData.complaints;
+        renderRecentFeed(portalComplaints.slice(0, 5));
+        renderManageTable(portalComplaints);
+        if (portalMap) renderMapMarkers(portalComplaints);
+      }
+
+      // 3. Fetch Hotspots
+      const resHot = await fetch("/api/ai/hotspots");
+      const hotData = await resHot.json();
+      if (hotData.success) {
+        document.getElementById("portalKpiHotspots").textContent = hotData.hotspots.length;
+        renderHotspotsList(hotData.hotspots);
+      }
+
+    } catch (err) {
+      console.error("Error loading portal data:", err);
+    }
+  }
+
+  function renderRecentFeed(items) {
+    const container = document.getElementById("portalRecentComplaints");
+    if (!container) return;
+    container.innerHTML = items.map(c => `
+      <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 0.85rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+            <span style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">${c.complaint_id}</span>
+            ${renderPriorityBadge(c.priority, c.priority_score)}
+            ${renderStatusBadge(c.status)}
+          </div>
+          <div style="font-size: 0.88rem; color: #ffffff;">${c.title}</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);"><i class="fas fa-map-marker-alt"></i> ${c.location_name || 'Urban Sector'}</div>
+        </div>
+        <button class="btn btn-outline-teal btn-sm" onclick="quickTrack('${c.complaint_id}')">Track &rarr;</button>
+      </div>
+    `).join("");
+  }
+
+  function renderHotspotsList(hotspots) {
+    const container = document.getElementById("portalHotspotsList");
+    if (!container) return;
+    container.innerHTML = hotspots.map(h => `
+      <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-subtle); padding: 0.75rem; border-radius: var(--radius-sm); display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 700; font-size: 0.88rem; color: #ffffff;">${h.area_name}</div>
+          <div style="font-size: 0.78rem; color: var(--teal-400);">${h.primary_category} • ${h.complaint_count} incidents</div>
+        </div>
+        <span class="badge badge-high">${h.urgency}</span>
+      </div>
+    `).join("");
+  }
+
+  function renderManageTable(items) {
+    const tbody = document.getElementById("pManageTableBody");
+    if (!tbody) return;
+    tbody.innerHTML = items.map(c => `
+      <tr>
+        <td style="font-weight: 700; color: var(--teal-400);">${c.complaint_id}</td>
+        <td>
+          <div style="font-weight: 600; color: #ffffff; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.title}</div>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">${c.location_name || 'Bangalore'}</div>
+        </td>
+        <td><span class="badge badge-neutral">${c.category}</span></td>
+        <td>${renderPriorityBadge(c.priority, c.priority_score)}</td>
+        <td>${renderStatusBadge(c.status)}</td>
+        <td style="font-size: 0.82rem; color: var(--text-muted);">${c.assigned_department || 'Unassigned'}</td>
+        <td>
+          <button class="btn btn-outline-teal btn-sm" onclick="openPortalModal(${c.id}, '${c.status}', '${c.assigned_department || ''}', '${c.assigned_officer || ''}')">
+            <i class="fas fa-edit"></i> Update
+          </button>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  function filterPortalTable() {
+    const search = document.getElementById("pManageSearch").value.toLowerCase().trim();
+    const status = document.getElementById("pManageStatusFilter").value;
+
+    const filtered = portalComplaints.filter(c => {
+      if (status !== "All" && c.status !== status) return false;
+      if (search) {
+        const str = `${c.complaint_id} ${c.title} ${c.description} ${c.location_name}`.toLowerCase();
+        if (!str.includes(search)) return false;
+      }
+      return true;
+    });
+    renderManageTable(filtered);
+  }
+
+  function openPortalModal(id, status, dept, officer) {
+    document.getElementById("pModalId").value = id;
+    document.getElementById("pModalStatus").value = status || "Submitted";
+    document.getElementById("pModalDept").value = dept || "Public Works Department (PWD)";
+    document.getElementById("pModalOfficer").value = officer || "S. Patil (Stormwater Engineer)";
+    document.getElementById("portalModal").classList.add("active");
+  }
+
+  function closePortalModal() {
+    document.getElementById("portalModal").classList.remove("active");
+  }
+
+  async function handleModalSubmit(e) {
+    e.preventDefault();
+    const id = document.getElementById("pModalId").value;
+    const status = document.getElementById("pModalStatus").value;
+    const department = document.getElementById("pModalDept").value;
+    const officer = document.getElementById("pModalOfficer").value;
+    const notes = document.getElementById("pModalNotes").value;
+
+    try {
+      const res = await fetch(`/api/complaints/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, department, officer, notes, actor: "Portal Admin" })
+      });
+      const data = await res.json();
+      if (data.success) {
+        closePortalModal();
+        showToast(`Complaint updated to '${status}' successfully!`, "success");
+        loadPortalData();
+      }
+    } catch (err) {
+      showToast("Error updating status", "danger");
+    }
+  }
+
+  // Submission
+  async function handlePortalSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById("btnPortalSubmit");
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Triaging with AI...';
+
+    const payload = {
+      citizen_name: document.getElementById("pInputName").value,
+      citizen_contact: document.getElementById("pInputContact").value,
+      title: document.getElementById("pInputTitle").value,
+      description: document.getElementById("pInputDesc").value,
+      category: document.getElementById("pInputCategory").value,
+      location_name: document.getElementById("pInputLocation").value,
+      latitude: parseFloat(document.getElementById("pInputLat").value),
+      longitude: parseFloat(document.getElementById("pInputLng").value)
+    };
+
+    try {
+      const res = await fetch("/api/complaints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success) {
+        const box = document.getElementById("portalSubmitResult");
+        box.style.display = "block";
+        box.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div style="font-weight: 700; color: #ffffff; font-size: 1.1rem;">
+              <i class="fas fa-check-circle text-teal"></i> Filed: ${data.complaint_id}
+            </div>
+            ${renderPriorityBadge(data.priority, data.priority_score)}
+          </div>
+          <div style="font-size: 0.9rem; color: #ffffff; margin-bottom: 0.5rem;">
+            <strong>Category:</strong> ${data.category} &nbsp;|&nbsp; <strong>Target SLA:</strong> ${data.sla_hours}h &nbsp;|&nbsp; <strong>Department:</strong> ${data.assigned_department}
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1rem;">
+            ${data.explanation}
+          </div>
+          <button class="btn btn-outline-teal btn-sm" onclick="quickTrack('${data.complaint_id}')">
+            <i class="fas fa-search-location"></i> Track This Complaint Live &rarr;
+          </button>
+        `;
+        showToast(`Complaint filed! Assigned ID: ${data.complaint_id}`, "success");
+        loadPortalData();
+      }
+    } catch (err) {
+      showToast("Submission failed", "danger");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Complaint & Run AI Triage';
+    }
+  }
+
+  function presetFloodCase() {
+    document.getElementById("pInputTitle").value = "Severe road flooding inundating homes";
+    document.getElementById("pInputDesc").value = "Water is entering houses because of road flooding.";
+    document.getElementById("pInputCategory").value = "Waterlogging";
+    document.getElementById("pInputLocation").value = "Koramangala 4th Block, 80 Feet Road";
+    showToast("Competition flood test case loaded!", "info");
+  }
+
+  // Tracking
+  function quickTrack(cid) {
+    document.getElementById("pTrackInput").value = cid;
+    switchPortalTab("tab-track");
+    executeTrack(cid);
+  }
+
+  async function executeTrack(overrideId) {
+    const cid = overrideId || document.getElementById("pTrackInput").value.trim();
+    const box = document.getElementById("pTrackOutput");
+    if (!cid) return;
+
+    box.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-circle-notch fa-spin text-teal"></i> Fetching complaint records...</div>';
+
+    try {
+      const res = await fetch(`/api/complaints/${cid}`);
+      const data = await res.json();
+      if (!data.success) {
+        box.innerHTML = `<div style="text-align: center; color: var(--critical); padding: 1.5rem;">No record found for '${cid}'.</div>`;
+        return;
+      }
+
+      const c = data.complaint;
+      const timelineHtml = (c.timeline || []).map((ev, i) => `
+        <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--teal-400); color: #080E1A; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0;">
+            ${i+1}
+          </div>
+          <div>
+            <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">${ev.action || ev.stage}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">${ev.timestamp ? formatDateTime(ev.timestamp) : ''} • By: ${ev.actor || 'System'}</div>
+            ${ev.notes ? `<div style="font-size: 0.82rem; color: var(--cyan-300); margin-top: 0.2rem;">${ev.notes}</div>` : ''}
+          </div>
+        </div>
+      `).join("");
+
+      box.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <h3 style="margin: 0; font-size: 1.3rem;">${c.complaint_id}: ${c.title}</h3>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
+              <i class="fas fa-map-marker-alt"></i> ${c.location_name || 'Bangalore'} &nbsp;|&nbsp; Filed: ${formatDateTime(c.created_at)}
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            ${renderPriorityBadge(c.priority, c.priority_score)}
+            ${renderStatusBadge(c.status)}
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <div style="font-weight: 700; color: var(--teal-400); font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fas fa-robot"></i> AI Triage Summary:</div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; margin: 0;">${c.summary || c.description}</p>
+            ${c.priority_reasons ? `
+              <ul style="font-size: 0.8rem; color: #cbd5e1; margin-top: 0.5rem; padding-left: 1.2rem;">
+                ${(c.priority_reasons || []).map(r => `<li>${r}</li>`).join("")}
+              </ul>
+            ` : ''}
+          </div>
+
+          <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <div style="font-weight: 700; color: var(--teal-400); font-size: 0.9rem; margin-bottom: 0.5rem;"><i class="fas fa-hard-hat"></i> Municipal Assignment:</div>
+            <div style="font-size: 0.85rem; color: #ffffff;"><strong>Department:</strong> ${c.assigned_department || 'General Triage'}</div>
+            <div style="font-size: 0.85rem; color: #ffffff; margin-top: 0.35rem;"><strong>Field Officer:</strong> ${c.assigned_officer || 'Squad Pending'}</div>
+            <div style="font-size: 0.85rem; color: var(--cyan-300); margin-top: 0.35rem;"><strong>Remediation Notes:</strong> ${c.resolution_notes || 'Field team dispatched under standard protocol.'}</div>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="font-size: 1.05rem; margin-bottom: 1rem;"><i class="fas fa-history text-teal"></i> Lifecycle Timeline & Audit Trail</h4>
+          ${timelineHtml}
+        </div>
+      `;
+
+    } catch (err) {
+      box.innerHTML = `<div style="text-align: center; color: var(--critical);">Error loading details for ${cid}.</div>`;
+    }
+  }
+
+  // Map Initialization
+  function initPortalMap() {
+    if (portalMap) return;
+    const container = document.getElementById("portalMapContainer");
+    if (!container) return;
+
+    portalMap = L.map("portalMapContainer").setView([12.9450, 77.6150], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "© OpenStreetMap contributors | CivicAI"
+    }).addTo(portalMap);
+
+    renderMapMarkers(portalComplaints);
+  }
+
+  function renderMapMarkers(items) {
+    if (!portalMap) return;
+    portalMarkers.forEach(m => portalMap.removeLayer(m));
+    portalMarkers = [];
+
+    items.forEach(c => {
+      if (!c.latitude || !c.longitude) return;
+      const prio = (c.priority || "").toUpperCase();
+      let color = "#3b82f6";
+      if (prio === "HIGH" || prio === "CRITICAL") color = "#ef4444";
+      else if (prio === "MEDIUM") color = "#f59e0b";
+      else if (c.status === "Resolved") color = "#06b6d4";
+
+      const icon = L.divIcon({
+        className: "custom-pin",
+        html: `<div style="width: 14px; height: 14px; background: ${color}; border: 2px solid #ffffff; border-radius: 50%; box-shadow: 0 0 10px ${color};"></div>`,
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      });
+
+      const marker = L.marker([c.latitude, c.longitude], { icon }).addTo(portalMap);
+      marker.bindPopup(`
+        <div style="font-family: inherit; font-size: 0.85rem; color: #080E1A;">
+          <strong>${c.complaint_id}</strong>: ${c.title}<br>
+          <span style="color: #64748b;">${c.category} • Priority: ${c.priority}</span><br>
+          <a href="javascript:void(0)" onclick="quickTrack('${c.complaint_id}')" style="color: #0284c7; font-weight: 700;">Track Status &rarr;</a>
+        </div>
+      `);
+      portalMarkers.push(marker);
+    });
+  }
+
+  function filterPortalMap() {
+    const cat = document.getElementById("pMapCatFilter").value;
+    const filtered = cat === "All" ? portalComplaints : portalComplaints.filter(c => c.category === cat);
+    renderMapMarkers(filtered);
+  }
+
+  // Admin Charts
+  function renderPortalCharts() {
+    const catCanvas = document.getElementById("pCategoryChart");
+    const prioCanvas = document.getElementById("pPriorityChart");
+    if (!catCanvas || !prioCanvas) return;
+
+    fetch("/api/stats").then(r => r.json()).then(stats => {
+      if (!stats.success) return;
+
+      if (catChart) catChart.destroy();
+      catChart = new Chart(catCanvas.getContext("2d"), {
+        type: "doughnut",
+        data: {
+          labels: stats.by_category.map(c => c.category),
+          datasets: [{
+            data: stats.by_category.map(c => c.count),
+            backgroundColor: ["#06b6d4", "#14b8a6", "#3b82f6", "#8b5cf6", "#f59e0b", "#ec4899"]
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8' } } } }
+      });
+
+      if (prioChart) prioChart.destroy();
+      prioChart = new Chart(prioCanvas.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: stats.by_priority.map(p => p.priority),
+          datasets: [{
+            label: "Incidents",
+            data: stats.by_priority.map(p => p.count),
+            backgroundColor: ["#ef4444", "#f59e0b", "#10b981"]
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#94a3b8' } }, x: { ticks: { color: '#94a3b8' } } }, plugins: { legend: { display: false } } }
+      });
+    });
+  }
+
+  function renderDeptTable(depts) {
+    const tbody = document.getElementById("pDeptTableBody");
+    if (!tbody || !depts) return;
+    tbody.innerHTML = depts.map(d => `
+      <tr>
+        <td style="font-weight: 700; color: #ffffff;">${d.department}</td>
+        <td><span class="badge badge-warning">${d.active_work_orders} Active</span></td>
+        <td><span class="badge badge-success">${d.resolved_jobs} Done</span></td>
+        <td style="color: var(--teal-400); font-weight: 600;">${d.avg_resolution_hours}h SLA</td>
+      </tr>
+    `).join("");
+  }
+
+  // Sandbox AI Runner
+  function setSandboxText(text) {
+    document.getElementById("sandboxInput").value = text;
+    runSandboxTest();
+  }
+
+  async function runSandboxTest() {
+    switchPortalTab("tab-sandbox");
+    const input = document.getElementById("sandboxInput").value.trim();
+    const box = document.getElementById("sandboxResultBox");
+    if (!input) return;
+
+    box.innerHTML = '<div style="text-align: center; padding: 1.5rem;"><i class="fas fa-circle-notch fa-spin text-teal"></i> Running explainable neural rules...</div>';
+
+    try {
+      const res = await fetch("/api/ai/prioritize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: input, description: input, location_name: "Urban Sector" })
+      });
+      const data = await res.json();
+      if (data.success) {
+        box.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.85rem; margin-bottom: 1rem;">
+            <div>
+              <span style="font-size: 0.82rem; color: var(--text-muted);">Classified Category:</span>
+              <div style="font-size: 1.25rem; font-weight: 800; color: #ffffff;">${data.category}</div>
+            </div>
+            <div>
+              ${renderPriorityBadge(data.priority, data.priority_score)}
+            </div>
+          </div>
+
+          <div style="margin-bottom: 1rem;">
+            <div style="font-size: 0.85rem; color: var(--teal-400); font-weight: 700; margin-bottom: 0.35rem;">
+              <i class="fas fa-check-circle"></i> Transparent Reasons & Justifications:
+            </div>
+            <ul style="font-size: 0.88rem; color: #ffffff; padding-left: 1.25rem; line-height: 1.6; margin: 0;">
+              ${(data.reasons || []).map(r => `<li>${r}</li>`).join("")}
+            </ul>
+          </div>
+
+          <div style="background: rgba(6, 182, 212, 0.08); padding: 0.85rem 1rem; border-radius: 4px; border-left: 3px solid var(--teal-400); font-size: 0.85rem; color: #e2e8f0;">
+            <strong>AI Municipal Action Brief:</strong> ${data.summary || 'Immediate crew deployment recommended.'}
+          </div>
+        `;
+      }
+    } catch (err) {
+      box.innerHTML = '<div style="color: var(--critical);">Error evaluating complaint text.</div>';
+    }
+  }
+</script>
+{% endblock %}
+
